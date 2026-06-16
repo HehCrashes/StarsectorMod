@@ -1,0 +1,6 @@
+id,trigger,conditions,script,text,options,notes
+cc_marketHostileBombardSel,DialogOptionSelected,$option == mktBombard score:10,CoreCrackingMarketCMD bombardMenu,,,
+cc_marketHostileBombardCoreCrackingSel,DialogOptionSelected,$option == mktBombardCoreCracking,CoreCrackingMarketCMD bombardCoreCracking,,,
+cc_marketHostileBombardCoreCrackingConfirmSel,DialogOptionSelected,$option == mktBombardCoreCrackingConfirm,CoreCrackingMarketCMD coreCracking,,,
+cc_marketHostileCoreCrackingExitSel,DialogOptionSelected,$option == mktCoreCrackingExit,CoreCrackingMarketCMD coreCrackingExit,,,
+cc_marketHostileBombardNeverMindSel,DialogOptionSelected,$option == mktBombardNeverMind score:10,CoreCrackingMarketCMD bombardNeverMind,,,

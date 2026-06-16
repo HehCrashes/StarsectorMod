@@ -1,0 +1,108 @@
+plugins {
+    id 'java'
+}
+
+sourceSets {
+    main {
+        java.srcDirs = ['src']
+        resources.srcDirs = ['resource']
+    }
+}
+
+group = 'data.scripts'
+version = ''
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compileOnly files(
+            "${starsectorDir}/starsector-core/starfarer.api.jar",
+
+            "${starsectorDir}/starsector-core/json.jar",
+
+            "${starsectorDir}/starsector-core/log4j-1.2.9.jar",
+
+            "${starsectorDir}/starsector-core/lwjgl.jar",
+            "${starsectorDir}/starsector-core/lwjgl_util.jar",
+
+            "${starsectorDir}/mods/Lunalib/jars/LunaLib.jar"
+    )
+}
+
+jar {
+    archiveBaseName = "${modid}-${modversion}"
+
+    destinationDirectory = file("$projectDir/out/jar/")
+}
+
+tasks.register('packaging', Sync) {
+    group = "_runStarsectorMod"
+
+    dependsOn jar
+
+    from("$projectDir/resources") {
+        exclude "mod_info.json"
+    }
+
+    from("$projectDir/resources/mod_info.json") {
+        expand(
+                modid: modid,
+                modName: modName,
+                author: author,
+                modversion: modversion,
+                modDescription: modDescription,
+                gameVersion: gameVersion,
+                jar: "jars/${modid}-${modversion}.jar",
+                modMain: modMain
+        )
+    }
+    into "$projectDir/out/${modid}"
+}
+
+tasks.register('outJar', Sync) {
+    group = "_runStarsectorMod"
+
+    dependsOn packaging
+
+    from "$projectDir/out/jar/${modid}-${modversion}.jar"
+    into "$projectDir/out/${modid}/jars"
+}
+
+tasks.register('toGame', Sync) {
+    group = "_runStarsectorMod"
+
+    dependsOn outJar
+
+    from "$projectDir/out/${modid}"
+
+    into "${starsectorDir}/mods/${modid}"
+}
+
+tasks.register('buildMod') {
+    group = "_runStarsectorMod"
+
+    dependsOn clean
+    dependsOn toGame
+}
+
+tasks.register('releaseZip', Zip) {
+    group = "_runStarsectorMod"
+
+    dependsOn clean
+    dependsOn outJar
+
+    archiveFileName = "${modid}-${modversion}.zip"
+
+    from "$projectDir/out/${modid}"
+}

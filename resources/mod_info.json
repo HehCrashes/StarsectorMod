@@ -1,0 +1,13 @@
+{
+    "id":"${modid}",
+    "name":"${modName}",
+    "author":"${author}",
+    "version":"${modversion}",
+    "description":"${modDescription}",
+    "gameVersion":"${gameVersion}",
+    "totalConversion":false,
+    "jars": [
+        "${jar}",
+    ],
+    "modPlugin": "${modMain}",
+}

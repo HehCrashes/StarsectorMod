@@ -1,0 +1,46 @@
+{
+  "variantId": "ts_refusal_standard",
+  "hullId": "ts_refusal",
+  "displayName": "Standard",
+  "goalVariant": true,
+  "fluxCapacitors": 20,
+  "fluxVents": 1,
+  "quality": 1,
+  "permaMods": [],
+  "hullMods": [
+    "automated",
+    "blast_doors"
+  ],
+  "weaponGroups": [
+    {
+      "autofire": true,
+      "mode": "LINKED",
+      "weapons": {
+        "WS0001": "atropos"
+      }
+    },
+    {
+      "autofire": true,
+      "mode": "LINKED",
+      "weapons": {
+        "WS0002": "vulcan"
+      }
+    },
+    {
+      "autofire": true,
+      "mode": "LINKED",
+      "weapons": {
+        "WS0003": "lrpdlaser"
+      }
+    },
+    {
+      "autofire": true,
+      "mode": "LINKED",
+      "weapons": {
+        "WS0004": "tachyonlance"
+      }
+    }
+  ],
+  "modules": [],
+  "wings": []
+}
