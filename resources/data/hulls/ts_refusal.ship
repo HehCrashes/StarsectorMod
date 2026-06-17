@@ -2,14 +2,14 @@
   "hullName": "Refusal",
   "hullId": "ts_refusal",
   "hullSize": "DESTROYER",
-  "spriteName": "graphics/testmod/ships/ts_refusal.png",
+  "spriteName": "graphics/CoreCracking/ships/ts_refusal.png",
   "style": "OMEGA",
-  "height": 209,
-  "width": 136,
-  "center": [69, 59],
-  "collisionRadius": 172,
-  "shieldCenter": [45.5, 1],
-  "shieldRadius": 118,
+  "height": 112,
+  "width": 119,
+  "center": [56, 62],
+  "collisionRadius": 78.5,
+  "shieldCenter": [0, -0],
+  "shieldRadius": 74,
   "viewOffset": 0,
   "builtInMods": [
     "automated"
@@ -17,124 +17,215 @@
   "weaponSlots": [
     {
       "id": "WS0001",
-      "size": "SMALL",
-      "type": "UNIVERSAL",
+      "size": "LARGE",
+      "type": "ENERGY",
       "mount": "HIDDEN",
-      "arc": 160,
-      "angle": 115,
-      "locations": [-40, 35.5]
+      "arc": 360,
+      "angle": 0,
+      "locations": [0, -0]
     },
     {
       "id": "WS0002",
       "size": "SMALL",
       "type": "UNIVERSAL",
       "mount": "HIDDEN",
-      "arc": 155,
-      "angle": 66,
-      "locations": [15.5, 32.5]
+      "arc": 140,
+      "angle": 130,
+      "locations": [-30, 22]
     },
     {
       "id": "WS0003",
       "size": "SMALL",
       "type": "UNIVERSAL",
       "mount": "HIDDEN",
-      "arc": 160,
-      "angle": -115,
-      "locations": [-17, -28.5]
+      "arc": 140,
+      "angle": 45,
+      "locations": [14, 28.5]
     },
     {
       "id": "WS0004",
-      "size": "LARGE",
-      "type": "ENERGY",
+      "size": "SMALL",
+      "type": "UNIVERSAL",
       "mount": "HIDDEN",
-      "arc": 60,
-      "angle": 0,
-      "locations": [62.5, -3.5]
+      "arc": 140,
+      "angle": -55,
+      "locations": [27.5, -25.5]
+    },
+    {
+      "id": "WS0005",
+      "size": "SMALL",
+      "type": "UNIVERSAL",
+      "mount": "HIDDEN",
+      "arc": 140,
+      "angle": -115,
+      "locations": [-21.5, -37]
     }
   ],
   "engineSlots": [
     {
-      "location": [-29, 2],
-      "length": 60,
-      "width": 16,
+      "location": [-21.5, -0.5],
+      "length": 90,
+      "width": 15,
       "angle": 180,
-      "contrailSize": 16,
-      "style": "THREAT"
-    },
-    {
-      "location": [-29, 2],
-      "length": 40,
-      "width": 10,
-      "angle": 180,
-      "contrailSize": 10,
+      "contrailSize": 15,
       "style": "OMEGA"
     },
     {
-      "location": [-29, -11],
-      "length": 60,
-      "width": 16,
+      "location": [-21, -10],
+      "length": 90,
+      "width": 15,
       "angle": 180,
-      "contrailSize": 16,
-      "style": "THREAT"
-    },
-    {
-      "location": [-29, -11],
-      "length": 40,
-      "width": 10,
-      "angle": 180,
-      "contrailSize": 10,
+      "contrailSize": 15,
       "style": "OMEGA"
     },
     {
-      "location": [-51, 35],
+      "location": [-38, 18],
       "length": 40,
       "width": 10,
       "angle": 180,
       "contrailSize": 10,
+      "style": "HIGH_TECH"
+    },
+    {
+      "location": [-33.5, 9.5],
+      "length": 40,
+      "width": 10,
+      "angle": 180,
+      "contrailSize": 10,
+      "style": "HIGH_TECH"
+    },
+    {
+      "location": [-44, 27],
+      "length": 40,
+      "width": 10,
+      "angle": 180,
+      "contrailSize": 10,
+      "style": "HIGH_TECH"
+    },
+    {
+      "location": [-34, -20.5],
+      "length": 40,
+      "width": 10,
+      "angle": 180,
+      "contrailSize": 10,
+      "style": "HIGH_TECH"
+    },
+    {
+      "location": [-36.5, -28.5],
+      "length": 40,
+      "width": 10,
+      "angle": 180,
+      "contrailSize": 10,
+      "style": "HIGH_TECH"
+    },
+    {
+      "location": [-37, -36],
+      "length": 40,
+      "width": 10,
+      "angle": 180,
+      "contrailSize": 10,
+      "style": "HIGH_TECH"
+    },
+    {
+      "location": [-49, 46],
+      "length": 15,
+      "width": 5,
+      "angle": -135,
+      "contrailSize": 5,
       "style": "THREAT"
     },
     {
-      "location": [-41, 20],
-      "length": 40,
-      "width": 10,
+      "location": [-49, 46],
+      "length": 15,
+      "width": 5,
       "angle": 180,
-      "contrailSize": 10,
+      "contrailSize": 5,
       "style": "THREAT"
     },
     {
-      "location": [-37, -27],
-      "length": 40,
-      "width": 10,
-      "angle": 180,
-      "contrailSize": 10,
+      "location": [-49, 46],
+      "length": 15,
+      "width": 5,
+      "angle": 135,
+      "contrailSize": 5,
       "style": "THREAT"
     },
     {
-      "location": [-32, -43],
-      "length": 40,
-      "width": 10,
+      "location": [-49, 46],
+      "length": 15,
+      "width": 5,
+      "angle": 0,
+      "contrailSize": 5,
+      "style": "THREAT"
+    },
+    {
+      "location": [-49, 46],
+      "length": 15,
+      "width": 5,
+      "angle": 90,
+      "contrailSize": 5,
+      "style": "THREAT"
+    },
+    {
+      "location": [-31, -43],
+      "length": 15,
+      "width": 5,
+      "angle": -135,
+      "contrailSize": 5,
+      "style": "THREAT"
+    },
+    {
+      "location": [-31, -43],
+      "length": 15,
+      "width": 5,
       "angle": 180,
-      "contrailSize": 10,
+      "contrailSize": 5,
+      "style": "THREAT"
+    },
+    {
+      "location": [-31, -43],
+      "length": 15,
+      "width": 5,
+      "angle": -90,
+      "contrailSize": 5,
+      "style": "THREAT"
+    },
+    {
+      "location": [-31, -43],
+      "length": 15,
+      "width": 5,
+      "angle": 135,
+      "contrailSize": 5,
+      "style": "THREAT"
+    },
+    {
+      "location": [-31, -43],
+      "length": 15,
+      "width": 5,
+      "angle": 0,
+      "contrailSize": 5,
       "style": "THREAT"
     }
   ],
   "bounds": [
-    144.5, 4.5,
-    74.5, -22,
-    82.5, -31,
-    21, -27.5,
-    14.5, -36,
-    -15.5, -48.5,
-    -25, -49.5,
-    -37.5, -37,
-    -33.5, -18.5,
-    -30.5, 5.5,
-    -54, 45.5,
-    -45.5, 45.5,
-    -15, 21,
-    4, 40.5,
-    32.5, 31.5,
-    20.5, 18,
-    21, 12.5
+    43.5, -48,
+    40, -51,
+    22, -32,
+    -16, -49,
+    -25, -49,
+    -37, -37,
+    -37, -30,
+    -32, -18,
+    -32, 8,
+    -52, 41,
+    -52, 46,
+    -45, 46,
+    -18, 23,
+    4, 39,
+    12, 39,
+    32.5, 32,
+    31.5, 27.5,
+    20, 18,
+    27, 1
   ]
 }

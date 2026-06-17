@@ -7,8 +7,8 @@
 	"displayNameLongWithArticle":"测试势力科技公司AAA军火批发",
 	"personNamePrefixAOrAn":"AAA军火批发王总",
 	"displayNameIsOrAre":"BBB舰船批发李总",
-	"logo":"graphics/testmod/factions/test_flag.png",
-	"crest":"graphics/testmod/factions/crest_test_flag.png",
+	"logo":"graphics/CoreCracking/factions/test_flag.png",
+	"crest":"graphics/CoreCracking/factions/crest_test_flag.png",
 	"shipNamePrefix":"BUG",
     "showInIntelTab":true,
 	"shipNameSources":{
