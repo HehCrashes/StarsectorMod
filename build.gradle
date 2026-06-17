@@ -36,7 +36,9 @@ dependencies {
             "${starsectorDir}/starsector-core/lwjgl.jar",
             "${starsectorDir}/starsector-core/lwjgl_util.jar",
 
-            "${starsectorDir}/mods/Lunalib/jars/LunaLib.jar"
+            "${starsectorDir}/mods/Lunalib/jars/LunaLib.jar",
+            "${starsectorDir}/mods/GraphicsLib/jars/Graphics.jar",
+            "${starsectorDir}/mods/MagicLib/jars/MagicLib.jar"
     )
 }
 

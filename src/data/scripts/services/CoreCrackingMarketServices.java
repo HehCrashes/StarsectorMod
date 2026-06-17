@@ -4,18 +4,19 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.*;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.impl.campaign.CoreReputationPlugin;
+import com.fs.starfarer.api.impl.campaign.CoreReputationPlugin.CustomRepImpact;
 import data.scripts.CoreCrackingModPlugin;
 import data.scripts.data.AsteroidsData;
 import data.scripts.intel.PlanetCrackedIntel;
 import data.scripts.utils.AsteroidsUtils;
 import data.scripts.utils.CCUtils;
-import com.fs.starfarer.api.impl.campaign.CoreReputationPlugin.CustomRepImpact;
+import org.lwjgl.util.vector.Vector2f;
 
 import java.awt.*;
 
 public class CoreCrackingMarketServices {
 
-    public static void CoreCracking(MarketAPI market, FactionAPI faction, TextPanelAPI text){
+    public static PlanetAPI CoreCracking(MarketAPI market, FactionAPI faction, TextPanelAPI text){
         SectorEntityToken planet = market.getPrimaryEntity();
 
         StarSystemAPI system = planet.getStarSystem();
@@ -65,6 +66,8 @@ public class CoreCrackingMarketServices {
 
         PlanetCrackedIntel intel = new PlanetCrackedIntel(system.getName(),planetName,faction.getDisplayName(),shattered);
         Global.getSector().getIntelManager().addIntel(intel, true, text);
+
+        return shattered;
     }
     public static void hostile(TextPanelAPI text){
         CustomRepImpact impact = new CustomRepImpact();
@@ -83,4 +86,18 @@ public class CoreCrackingMarketServices {
                     faction.getId());
         }
     }
+     public static void coreCrackingAnimation(PlanetAPI planet){
+         LocationAPI loc = planet.getStarSystem();
+         Vector2f center = planet.getLocation();
+
+         loc.addHitParticle(center, new Vector2f(1f,1f),
+                 100000f, 2f, 5f,
+                 new Color(255, 255, 255, 255));
+         loc.addHitParticle(center, new Vector2f(1f,1f),
+                 planet.getRadius() * 40, 2f, 7.5f,
+                 new Color(255, 255, 200, 255));
+         loc.addHitParticle(center, new Vector2f(1f,1f),
+                 planet.getRadius() * 20, 2f, 10f,
+                 new Color(255, 128, 0, 255));
+     }
 }

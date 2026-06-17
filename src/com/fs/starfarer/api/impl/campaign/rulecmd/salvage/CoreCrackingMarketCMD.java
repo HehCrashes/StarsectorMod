@@ -2,23 +2,23 @@ package com.fs.starfarer.api.impl.campaign.rulecmd.salvage;
 
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.*;
+import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 import com.fs.starfarer.api.combat.StatBonus;
 import com.fs.starfarer.api.impl.campaign.DebugFlags;
+import com.fs.starfarer.api.impl.campaign.ids.Conditions;
 import com.fs.starfarer.api.impl.campaign.intel.BaseIntelPlugin;
 import com.fs.starfarer.api.impl.campaign.rulecmd.AddRemoveCommodity;
 import com.fs.starfarer.api.ui.LabelAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 import data.scripts.CoreCrackingModPlugin;
-import data.scripts.intel.PlanetCrackedIntel;
+import data.scripts.data.AsteroidsData;
 import data.scripts.services.CoreCrackingMarketServices;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.w3c.dom.css.RGBColor;
+import data.scripts.services.RingWorldServices;
+import org.lwjgl.util.vector.Vector2f;
 
 import java.awt.*;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -29,6 +29,7 @@ public class CoreCrackingMarketCMD extends MarketCMD {
 
     private static int fuelCost = 5000;
     private static int volatilesCost = 200;
+    private PlanetAPI shattered;
     /** -> {@link CoreCrackingMarketCMD#bombardCoreCracking()} */
     public static String BOMBARD_CORE_CRACKING = "mktBombardCoreCracking";
     /** -> {@link CoreCrackingMarketCMD#coreCracking()} */
@@ -48,11 +49,7 @@ public class CoreCrackingMarketCMD extends MarketCMD {
         } else if (command.equals("coreCracking")) {
             coreCracking();
         } else if (command.equals("coreCrackingExit")) {
-            this.clearTemp();
-            if (this.market != null) {
-                this.market.getMemoryWithoutUpdate().set("$coreCracked", true);
-            }
-            dialog.dismiss();
+            coreCrackingExit();
             return true;
         }
         return true;
@@ -124,6 +121,8 @@ public class CoreCrackingMarketCMD extends MarketCMD {
 
         this.options.addOption("返回", RAID_GO_BACK);
         this.options.setShortcut(RAID_GO_BACK, 1, false, false, false, true);
+
+        RingWorldServices.createRingWorld(market);
     }
 
     @Override
@@ -201,7 +200,17 @@ public class CoreCrackingMarketCMD extends MarketCMD {
         this.options.clearOptions();
         this.options.addOption("退出", CORE_CRACKING_EXIT);
 
-        CoreCrackingMarketServices.CoreCracking(market,this.faction,text);
+        shattered = CoreCrackingMarketServices.CoreCracking(market,this.faction,text);
         CoreCrackingMarketServices.hostile(text);
+
+        CoreCrackingMarketServices.coreCrackingAnimation(shattered);
+    }
+
+    protected void coreCrackingExit(){
+        this.clearTemp();
+        if (this.market != null) {
+            this.market.getMemoryWithoutUpdate().set("$coreCracked", true);
+        }
+        dialog.dismiss();
     }
 }

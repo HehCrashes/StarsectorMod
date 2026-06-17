@@ -1,6 +1,7 @@
 package data.scripts.data;
 
 public class AsteroidsData {
+    public static final float minRingRadius = 2048f;
     public enum randomFlag {
         NumAsteroids(0x1),
         Radius(0x10),
@@ -25,8 +26,8 @@ public class AsteroidsData {
         Asteroids("rings_asteroids0", 4),
         Dust("rings_dust0", 4),
         Ice("rings_ice0", 4),
-        Special("rings_special0", 2);
-
+        Special("rings_special0", 2),
+        Test("ringtest",1);
 
         private final String name;
         private final int blockSize;
