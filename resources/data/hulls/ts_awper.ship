@@ -1,6 +1,6 @@
 {
   "hullName": "AWPer",
-  "hullId": "awper",
+  "hullId": "ts_awper",
   "hullSize": "CRUISER",
   "spriteName": "graphics/CoreCracking/ships/ts_awper.png",
   "style": "HIGH_TECH",

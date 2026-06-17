@@ -1,7 +1,7 @@
 {
-  "variantId": "awper_variant",
-  "hullId": "awper",
-  "displayName": "New Variant",
+  "variantId": "ts_awper_variant",
+  "hullId": "ts_awper",
+  "displayName": "主力",
   "goalVariant": false,
   "fluxCapacitors": 30,
   "fluxVents": 0,
