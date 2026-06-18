@@ -38,7 +38,8 @@ dependencies {
 
             "${starsectorDir}/mods/Lunalib/jars/LunaLib.jar",
             "${starsectorDir}/mods/GraphicsLib/jars/Graphics.jar",
-            "${starsectorDir}/mods/MagicLib/jars/MagicLib.jar"
+            "${starsectorDir}/mods/MagicLib/jars/MagicLib.jar",
+            "${starsectorDir}/mods/LazyLib/jars/LazyLib.jar"
     )
 }
 
@@ -96,6 +97,15 @@ tasks.register('buildMod') {
 
     dependsOn clean
     dependsOn toGame
+}
+
+tasks.register('runGame', Exec) {
+    group = "_runStarsectorMod"
+
+    dependsOn buildMod
+
+    workingDir = "${starsectorDir}"
+    executable = "${starsectorDir}/starsector.exe"
 }
 
 tasks.register('releaseZip', Zip) {

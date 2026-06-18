@@ -10,7 +10,6 @@ import data.scripts.data.AsteroidsData;
 import data.scripts.intel.PlanetCrackedIntel;
 import data.scripts.utils.AsteroidsUtils;
 import data.scripts.utils.CCUtils;
-import org.lwjgl.util.vector.Vector2f;
 
 import java.awt.*;
 
@@ -86,18 +85,4 @@ public class CoreCrackingMarketServices {
                     faction.getId());
         }
     }
-     public static void coreCrackingAnimation(PlanetAPI planet){
-         LocationAPI loc = planet.getStarSystem();
-         Vector2f center = planet.getLocation();
-
-         loc.addHitParticle(center, new Vector2f(1f,1f),
-                 100000f, 2f, 5f,
-                 new Color(255, 255, 255, 255));
-         loc.addHitParticle(center, new Vector2f(1f,1f),
-                 planet.getRadius() * 40, 2f, 7.5f,
-                 new Color(255, 255, 200, 255));
-         loc.addHitParticle(center, new Vector2f(1f,1f),
-                 planet.getRadius() * 20, 2f, 10f,
-                 new Color(255, 128, 0, 255));
-     }
 }

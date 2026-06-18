@@ -2,21 +2,18 @@ package com.fs.starfarer.api.impl.campaign.rulecmd.salvage;
 
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.*;
-import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.rules.MemoryAPI;
 import com.fs.starfarer.api.combat.StatBonus;
 import com.fs.starfarer.api.impl.campaign.DebugFlags;
-import com.fs.starfarer.api.impl.campaign.ids.Conditions;
 import com.fs.starfarer.api.impl.campaign.intel.BaseIntelPlugin;
 import com.fs.starfarer.api.impl.campaign.rulecmd.AddRemoveCommodity;
 import com.fs.starfarer.api.ui.LabelAPI;
 import com.fs.starfarer.api.ui.TooltipMakerAPI;
 import com.fs.starfarer.api.util.Misc;
 import data.scripts.CoreCrackingModPlugin;
-import data.scripts.data.AsteroidsData;
 import data.scripts.services.CoreCrackingMarketServices;
 import data.scripts.services.RingWorldServices;
-import org.lwjgl.util.vector.Vector2f;
+import data.scripts.animation.PlanetDestructionAnimationScript;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -203,7 +200,8 @@ public class CoreCrackingMarketCMD extends MarketCMD {
         shattered = CoreCrackingMarketServices.CoreCracking(market,this.faction,text);
         CoreCrackingMarketServices.hostile(text);
 
-        CoreCrackingMarketServices.coreCrackingAnimation(shattered);
+        PlanetDestructionAnimationScript anim = new PlanetDestructionAnimationScript(shattered);
+        Global.getSector().addTransientScript(anim);
     }
 
     protected void coreCrackingExit(){

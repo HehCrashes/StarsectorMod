@@ -13,6 +13,7 @@ public class CoreCrackingModPlugin extends BaseModPlugin {
     @Override
     public void onApplicationLoad() throws Exception {
         Global.getSettings().getScriptClassLoader();
+
         JSONArray data = Global.getSettings().getMergedSpreadsheetData("id", "data/config/genocideBlacklist.csv");
         for (int i = 0; i < data.length(); i++) {
             JSONObject row = data.getJSONObject(i);
