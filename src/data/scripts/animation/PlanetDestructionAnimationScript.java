@@ -14,9 +14,9 @@ public class PlanetDestructionAnimationScript extends BaseAnimationGroupScript {
     @Override
     public void loadAnimations() {
         AnimationList.add(new FlashAnimation(planet,0.4f,100000f,0f,5f,Color.white));
-        AnimationList.add(new ShockwaveAnimation(planet, 80f, 2f, 3f, new Color(255, 205,40), new Color(255,140,40)));
-        AnimationList.add(new ShockwaveAnimation(planet, 80f, 2.5f, 3f, new Color(245, 157, 77, 255), new Color(194, 146, 81)));
-        AnimationList.add(new ShockwaveAnimation(planet, 80f, 3f, 3f, new Color(255, 255, 255), new Color(152, 152, 152)));
+        AnimationList.add(new ShockwaveAnimation(planet, 80f, 2f, 1.5f, new Color(255, 205,40), new Color(255,140,40)));
+        AnimationList.add(new ShockwaveAnimation(planet, 80f, 2.5f, 1.5f, new Color(245, 157, 77, 255), new Color(194, 146, 81)));
+        AnimationList.add(new ShockwaveAnimation(planet, 80f, 3f, 1.5f, new Color(255, 255, 255), new Color(152, 152, 152)));
         AnimationList.add(new FlashAnimation(planet,0.5f,2f,40f,new Color(255, 128, 0)));
 
     }

@@ -1,18 +1,15 @@
 {
-	# should be a copy of "combatSmall", minus variants that are annoying to fight in low numbers
-	# for example, no Hyperions or fast beam-based kiting loadouts, or ships with damper field
 	"combatSmallForSmallFleet":{
-		"ts_refusal_standard": 20,
+
 	},
 	"combatSmall":{
-		"ts_refusal_standard": 20,
-		
+
 	},
 	"combatMedium":{
-		
+		"ts_refusal_standard": 20,
 	},
 	"combatLarge":{
-		
+		"ts_awper_variant": 20,
 	},
 	"combatCapital":{
 		

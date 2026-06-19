@@ -1,15 +1,18 @@
 {
-	id:"test",
-	"color":[255,255,0,255],
-	"displayName":"测试",
-	"displayNameWithArticle":"测试势力",
-	"displayNameLong":"测试势力科技公司",
-	"displayNameLongWithArticle":"测试势力科技公司AAA军火批发",
-	"personNamePrefixAOrAn":"AAA军火批发王总",
-	"displayNameIsOrAre":"BBB舰船批发李总",
-	"logo":"graphics/CoreCracking/factions/test_flag.png",
-	"crest":"graphics/CoreCracking/factions/crest_test_flag.png",
-	"shipNamePrefix":"BUG",
+	id:"pcp",
+	"color":[255,255,255,255],
+
+	"displayName":"净化委员会",
+	"displayNameWithArticle":"净化委员会",
+	"displayNameLong":"英仙座净化委员会",
+	"displayNameLongWithArticle":"英仙座净化委员会",
+	"entityNamePrefix":"委员会",
+	"personNamePrefix":"委员会",
+
+	"logo":"graphics/CoreCracking/factions/pcp_flag.png",
+	"crest":"graphics/CoreCracking/factions/crest_pcp_flag.png",
+	"shipNamePrefix":"PCP",
+
     "showInIntelTab":true,
 	"shipNameSources":{
 		"JAPANESE":2,
@@ -84,18 +87,15 @@
 			"odyssey",
 			"paragon",
 
-            "ts_refusal"
+            "ts_refusal",
+            "ts_awper"
 		],
 	},
-	# listing ships here will make the faction mostly use them even if other hulls become available
-	# listing capitals as priority will make them be picked even when they're the wrong "type" re: warship/carrier/phase ship
 	"priorityShips":{
 		"tags":[],
 		"hulls":[
-			"astral",
-			"odyssey",
-			"paragon",
-            "ts_refusal"
+			"ts_refusal",
+            "ts_awper"
 		],
 	},
 	"knownFighters":{
@@ -341,25 +341,25 @@
 		},
 	},	
 	"fleetTypeNames":{
-		"trade":"企业测试商队",
-		"tradeLiner":"速子空间测试旅游舰队",
-		"tradeSmuggler":"运输测试舰队",
-		"smallTrader":"配送测试舰队",
-		
-		"patrolSmall":"安全测试巡逻队",
-		"patrolMedium":"安全测试护卫队",
-		"patrolLarge":"商业测试保障舰队",
-		
-		"inspectionFleet":"QA 测试巡视员",
-		"taskForce":"特别测试事务行动小组",
-		
-		"foodReliefFleet":"救援测试舰队",
-		
-		#"mercScout":"外包测试侦察队",
-		"mercBountyHunter":"回收测试承包商",
-		"mercPrivateer":"安保测试承包商",
-		#"mercPatrol":"受雇测试巡逻队",
-		#"mercArmada":"受雇测试无敌舰队",
+		"trade":"企业商队",
+		"tradeLiner":"速子空间旅游舰队",
+		"tradeSmuggler":"运输舰队",
+		"smallTrader":"配送舰队",
+
+		"patrolSmall":"安全巡逻队",
+		"patrolMedium":"安全护卫队",
+		"patrolLarge":"商业保障舰队",
+
+		"inspectionFleet":"QA 巡视员",
+		"taskForce":"特别事务行动小组",
+
+		"foodReliefFleet":"救援舰队",
+
+		"mercScout":"外包侦察队",
+		"mercBountyHunter":"回收承包商",
+		"mercPrivateer":"安保承包商",
+		"mercPatrol":"受雇巡逻队",
+		"mercArmada":"受雇无敌舰队",
 	}
 },
 
