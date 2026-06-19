@@ -63,7 +63,7 @@ public class CoreCrackingMarketServices {
                         AsteroidsData.randomFlag.PeriodOffset.getFlag()
         );
 
-        PlanetCrackedIntel intel = new PlanetCrackedIntel(system.getName(),planetName,faction.getDisplayName(),shattered);
+        PlanetCrackedIntel intel = new PlanetCrackedIntel(system.getName(),planetName,faction.getDisplayName(),Global.getSector().getPlayerFaction(),shattered);
         Global.getSector().getIntelManager().addIntel(intel, true, text);
 
         return shattered;

@@ -10,4 +10,10 @@
         "${jar}",
     ],
     "modPlugin": "${modMain}",
+    "dependencies": [
+        {
+            "id": "lunalib",
+            "name": "LunaLib",
+        },
+    ]
 }
