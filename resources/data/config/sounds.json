@@ -1,7 +1,7 @@
 {
     "music":{
         "new_solar_system":[
-            {"file":"new_solar.ogg","source":"sounds/music","volume":1.0}
+            {"file":"new_solar.ogg","source":"sounds/music","volume":0.7}
         ],
     },
 },
