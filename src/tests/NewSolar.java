@@ -25,7 +25,7 @@ public class NewSolar {
 
         PlanetAPI star = system.initStar("new_solar", "star_yellow", 1700f, 40000f, 40000f, 500f);
         star.setName("新太阳");
-        //system.setBackgroundTextureFilename("graphics/backgrounds/hoshi.jpg");
+        system.setBackgroundTextureFilename("graphics/CoreCracking/backgrounds/pcp_background1.png");
 
         PlanetAPI mercury = system.addPlanet("new_mercury", star, "新水星", "rocky_metallic", 0f, 57.44f, 2400f, 58.65f);
         PlanetAPI venus = system.addPlanet("new_venus", star, "新金星", "barren_venuslike", 0f, 142.48f, 3200f, 224.70f);
