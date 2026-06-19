@@ -3,6 +3,7 @@ package data.scripts;
 import com.fs.starfarer.api.BaseModPlugin;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.SectorAPI;
+import com.fs.starfarer.api.impl.MusicPlayerPluginImpl;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import tests.NewSolar;
@@ -28,5 +29,12 @@ public class CoreCrackingModPlugin extends BaseModPlugin {
     public void onNewGame() {
         SectorAPI sector = Global.getSector();
         (new NewSolar()).generate(sector);
+    }
+
+    @Override
+    public void onGameLoad(boolean newGame) {
+        if (Global.getSector().getStarSystem("NewSolar") != null) {
+            Global.getSector().getStarSystem("NewSolar").getMemoryWithoutUpdate().set(MusicPlayerPluginImpl.MUSIC_SET_MEM_KEY, "new_solar_system");
+        }
     }
 }

@@ -4,6 +4,7 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.*;
 import com.fs.starfarer.api.campaign.econ.EconomyAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.impl.MusicPlayerPluginImpl;
 import com.fs.starfarer.api.impl.campaign.ids.*;
 import com.fs.starfarer.api.impl.campaign.procgen.NebulaEditor;
 import com.fs.starfarer.api.impl.campaign.procgen.StarAge;
@@ -20,7 +21,7 @@ import java.util.ArrayList;
 public class NewSolar {
 
     public void generate(SectorAPI sector) {
-        StarSystemAPI system = sector.createStarSystem("新太阳系");
+        StarSystemAPI system = sector.createStarSystem("NewSolar");
 
         PlanetAPI star = system.initStar("new_solar", "star_yellow", 1700f, 40000f, 40000f, 500f);
         star.setName("新太阳");
