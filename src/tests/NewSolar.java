@@ -122,6 +122,8 @@ public class NewSolar {
         StarSystemGenerator.addSystemwideNebula(system, StarAge.YOUNG);
         system.autogenerateHyperspaceJumpPoints(true, true);
 
+        Global.getSector().addScript(new MySystemMusicScript(system));
+
         cleanup(system);
     }
 
