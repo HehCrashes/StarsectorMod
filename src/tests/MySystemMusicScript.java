@@ -1,11 +1,12 @@
 package tests;
 
+import com.fs.starfarer.api.EveryFrameScript;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.impl.MusicPlayerPluginImpl;
 import com.fs.starfarer.api.util.IntervalUtil;
 
-public class MySystemMusicScript implements com.fs.starfarer.api.EveryFrameScript {
+public class MySystemMusicScript implements EveryFrameScript {
 
     private IntervalUtil timer = new IntervalUtil(1f, 2f);
     private StarSystemAPI system;

@@ -15,7 +15,7 @@ import java.awt.*;
 
 public class CoreCrackingMarketServices {
 
-    public static PlanetAPI CoreCracking(MarketAPI market, FactionAPI faction, TextPanelAPI text){
+    public static PlanetAPI CoreCracking(MarketAPI market, FactionAPI faction, TextPanelAPI text, InteractionDialogAPI dialog){
         SectorEntityToken planet = market.getPrimaryEntity();
 
         StarSystemAPI system = planet.getStarSystem();
@@ -65,6 +65,7 @@ public class CoreCrackingMarketServices {
 
         PlanetCrackedIntel intel = new PlanetCrackedIntel(system.getName(),planetName,faction.getDisplayName(),Global.getSector().getPlayerFaction(),shattered);
         Global.getSector().getIntelManager().addIntel(intel, true, text);
+        tests.bigevent.BaseSuperEvent.show(planetName);
 
         return shattered;
     }

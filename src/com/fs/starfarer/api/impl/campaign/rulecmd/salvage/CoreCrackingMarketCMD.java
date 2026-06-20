@@ -189,16 +189,11 @@ public class CoreCrackingMarketCMD extends MarketCMD {
         this.playerFleet.getCargo().removeCommodity("volatiles", (float)volatilesCost);
         AddRemoveCommodity.addCommodityLossText("volatiles", volatilesCost, this.text);
 
-        TooltipMakerAPI info = this.text.beginTooltip();
-        info.setParaSmallInsignia();
-        info.addPara("{%s}", initPad, fatalWarn,"该星球已在烈焰中毁灭。");
-        this.text.addTooltip();
+        shattered = CoreCrackingMarketServices.CoreCracking(market,this.faction,text,dialog);
+        CoreCrackingMarketServices.hostile(text);
 
         this.options.clearOptions();
         this.options.addOption("退出", CORE_CRACKING_EXIT);
-
-        shattered = CoreCrackingMarketServices.CoreCracking(market,this.faction,text);
-        CoreCrackingMarketServices.hostile(text);
 
         PlanetDestructionAnimationScript anim = new PlanetDestructionAnimationScript(shattered);
         Global.getSector().addTransientScript(anim);

@@ -2,6 +2,9 @@
   "graphics":{
     "misc":{
       "ringtest":"graphics/test.png",
-    }
+    },
+    "superevent": {
+      "se_corecracking": "graphics/CoreCracking/superevent/se_corecracking.png",
+    },
   }
 }

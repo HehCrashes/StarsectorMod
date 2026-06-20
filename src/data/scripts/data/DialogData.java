@@ -13,4 +13,6 @@ public class DialogData {
     public static final Color highlight = Misc.getHighlightColor();
     public static final Color negativeHighlight = Misc.getNegativeHighlightColor();;
     public static final Color fatalWarn = Color.red;
+    public static final Color fillBackground = new Color(21,65,77);
+    public static final Color fillForeground = new Color(143,187,214);
 }
