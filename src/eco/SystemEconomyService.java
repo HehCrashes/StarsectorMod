@@ -256,6 +256,8 @@ public class SystemEconomyService implements EconomyTickListener {
                 market.getMemoryWithoutUpdate().set(MONTH_KEY, currentMonth);
             }
         }
+
+        EconomyDataIntel.ensureIntelsForAllSystems();
     }
 
     public static PlanetTradeData getTradeData(MarketAPI market) {

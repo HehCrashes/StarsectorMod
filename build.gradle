@@ -28,6 +28,8 @@ repositories {
 dependencies {
     compileOnly files(
             "${starsectorDir}/starsector-core/starfarer.api.jar",
+            "${starsectorDir}/starsector-core/starfarer.api.zip",
+            "${starsectorDir}/starsector-core/starfarer_obf.jar",
 
             "${starsectorDir}/starsector-core/json.jar",
 

@@ -1,22 +1,35 @@
 package eco;
 
-import com.fs.starfarer.api.EveryFrameScript;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.CustomUIPanelPlugin;
 import com.fs.starfarer.api.campaign.CustomVisualDialogDelegate;
 import com.fs.starfarer.api.campaign.InteractionDialogAPI;
+import com.fs.starfarer.api.campaign.InteractionDialogPlugin;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
+import com.fs.starfarer.api.campaign.rules.MemoryAPI;
+import com.fs.starfarer.api.combat.EngagementResultAPI;
 import com.fs.starfarer.api.input.InputEventAPI;
 import com.fs.starfarer.api.ui.*;
 import com.fs.starfarer.api.util.Misc;
 
 import java.awt.Color;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 public class EconomyDataDialogDelegate implements CustomVisualDialogDelegate {
 
     private DialogCallbacks callbacks;
+    private String systemId;
+
+    public EconomyDataDialogDelegate() {
+        this(null);
+    }
+
+    public EconomyDataDialogDelegate(String systemId) {
+        this.systemId = systemId;
+    }
 
     @Override
     public void init(CustomPanelAPI panel, DialogCallbacks callbacks) {
@@ -28,20 +41,19 @@ public class EconomyDataDialogDelegate implements CustomVisualDialogDelegate {
         Color h = Misc.getHighlightColor();
         Color nh = Misc.getNegativeHighlightColor();
         Color pos = Misc.getPositiveHighlightColor();
-        Color sectionColor = Misc.getBasePlayerColor();
-        Color bgColor = new Color(21, 65, 77);
         Color fgColor = new Color(143, 187, 214);
+        Color bgColor = new Color(21, 65, 77);
 
         TooltipMakerAPI title = panel.createUIElement(pw, 20f, false);
         int month = Global.getSector().getClock().getMonth();
         title.addSectionHeading("星系经济数据 (第" + month + "月)", fgColor, bgColor, Alignment.MID, 0f);
         panel.addUIElement(title).inTL(0f, 5f);
 
-        Map<String, List<MarketAPI>> systemMap = groupMarketsBySystem();
+        List<SystemWithMarkets> systems = getSystems();
         int totalLines = 3;
-        for (Map.Entry<String, List<MarketAPI>> entry : systemMap.entrySet()) {
+        for (SystemWithMarkets swm : systems) {
             totalLines += 2;
-            for (MarketAPI m : entry.getValue()) {
+            for (MarketAPI m : swm.markets) {
                 PlanetTradeData data = SystemEconomyService.getTradeData(m);
                 if (data == null) continue;
                 totalLines += 3;
@@ -49,6 +61,7 @@ public class EconomyDataDialogDelegate implements CustomVisualDialogDelegate {
                 totalLines += data.interSystemExports.size() + data.interSystemImports.size();
             }
         }
+
         float contentH = Math.max(ph - 60f, totalLines * 14f + 40f);
 
         float imgAreaH = ph - 60f;
@@ -59,13 +72,12 @@ public class EconomyDataDialogDelegate implements CustomVisualDialogDelegate {
         content.setParaSmallInsignia();
         content.setParaFontDefault();
 
-        for (Map.Entry<String, List<MarketAPI>> entry : systemMap.entrySet()) {
-            String systemName = getSystemName(entry.getKey());
-            List<MarketAPI> markets = entry.getValue();
+        for (SystemWithMarkets swm : systems) {
+            String sysName = getSystemName(swm.systemId);
 
-            content.addSectionHeading(systemName, fgColor, bgColor, Alignment.MID, opad);
+            content.addSectionHeading(sysName, fgColor, bgColor, Alignment.MID, opad);
 
-            for (MarketAPI market : markets) {
+            for (MarketAPI market : swm.markets) {
                 PlanetTradeData data = SystemEconomyService.getTradeData(market);
                 if (data == null) continue;
 
@@ -149,46 +161,71 @@ public class EconomyDataDialogDelegate implements CustomVisualDialogDelegate {
     @Override
     public void reportDismissed(int reason) {}
 
-    private Map<String, List<MarketAPI>> groupMarketsBySystem() {
-        Map<String, List<MarketAPI>> result = new LinkedHashMap<>();
+    private List<SystemWithMarkets> getSystems() {
+        List<SystemWithMarkets> result = new ArrayList<>();
         for (MarketAPI market : Global.getSector().getEconomy().getMarketsCopy()) {
             if (!market.isInEconomy()) continue;
             StarSystemAPI system = market.getStarSystem();
             if (system == null) continue;
             if (SystemEconomyService.getTradeData(market) == null) continue;
-            result.computeIfAbsent(system.getId(), k -> new ArrayList<>()).add(market);
+
+            SystemWithMarkets found = null;
+            for (SystemWithMarkets swm : result) {
+                if (swm.systemId.equals(system.getId())) {
+                    found = swm;
+                    break;
+                }
+            }
+            if (found == null) {
+                found = new SystemWithMarkets(system.getId());
+                result.add(found);
+            }
+            found.markets.add(market);
+        }
+
+        if (systemId != null) {
+            List<SystemWithMarkets> filtered = new ArrayList<>();
+            for (SystemWithMarkets swm : result) {
+                if (swm.systemId.equals(systemId)) {
+                    filtered.add(swm);
+                    break;
+                }
+            }
+            return filtered;
         }
         return result;
     }
 
-    private String getSystemName(String systemId) {
-        StarSystemAPI system = Global.getSector().getStarSystem(systemId);
-        return system != null ? system.getName() : systemId;
+    private String getSystemName(String sysId) {
+        StarSystemAPI system = Global.getSector().getStarSystem(sysId);
+        return system != null ? system.getName() : sysId;
     }
 
-    public static void show() {
-        EconomyDataDialogDelegate.show(680f, 520f);
+    private static class SystemWithMarkets {
+        String systemId;
+        List<MarketAPI> markets = new ArrayList<>();
+        SystemWithMarkets(String systemId) { this.systemId = systemId; }
     }
 
-    public static void show(float width, float height) {
-        Global.getSector().addTransientScript(new EveryFrameScript() {
-            boolean done = false;
+    public static void showDialogForSystem(String systemId) {
+        EconomyDataDialogDelegate delegate = new EconomyDataDialogDelegate(systemId);
+        Global.getSector().getCampaignUI().showInteractionDialog(new InteractionDialogPlugin() {
             @Override
-            public void advance(float amount) {
-                if (done) return;
-                done = true;
-                InteractionDialogAPI dialog = Global.getSector().getCampaignUI().getCurrentInteractionDialog();
-                if (dialog == null) return;
-                dialog.showCustomVisualDialog(width, height, new EconomyDataDialogDelegate());
+            public void init(InteractionDialogAPI dialog) {
+                dialog.showCustomVisualDialog(680f, 520f, delegate);
             }
             @Override
-            public boolean isDone() {
-                return done;
-            }
+            public void optionSelected(String optionText, Object optionData) {}
             @Override
-            public boolean runWhilePaused() {
-                return true;
-            }
-        });
+            public void optionMousedOver(String optionText, Object optionData) {}
+            @Override
+            public void advance(float amount) {}
+            @Override
+            public void backFromEngagement(EngagementResultAPI battleResult) {}
+            @Override
+            public Object getContext() { return null; }
+            @Override
+            public Map<String, MemoryAPI> getMemoryMap() { return null; }
+        }, null);
     }
 }
