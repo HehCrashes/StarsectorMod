@@ -4,6 +4,7 @@ import com.fs.starfarer.api.BaseModPlugin;
 import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.SectorAPI;
 import com.fs.starfarer.api.impl.MusicPlayerPluginImpl;
+import eco.*;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import tests.NewSolar;
@@ -13,6 +14,7 @@ import java.util.Set;
 
 public class CoreCrackingModPlugin extends BaseModPlugin {
     public static Set<String> blacklistIds = new HashSet<>();
+
     @Override
     public void onApplicationLoad() throws Exception {
         Global.getSettings().getScriptClassLoader();
@@ -24,6 +26,14 @@ public class CoreCrackingModPlugin extends BaseModPlugin {
         }
     }
 
+    @Override
+    public void onGameLoad(boolean newGame) {
+        if (Global.getSector().getStarSystem("NewSolar") != null) {
+            Global.getSector().getStarSystem("NewSolar").getMemoryWithoutUpdate().set(
+                    MusicPlayerPluginImpl.MUSIC_SET_MEM_KEY, "new_solar_system");
+        }
+        registerEconomy();
+    }
 
     @Override
     public void onNewGame() {
@@ -31,10 +41,12 @@ public class CoreCrackingModPlugin extends BaseModPlugin {
         (new NewSolar()).generate(sector);
     }
 
-    @Override
-    public void onGameLoad(boolean newGame) {
-        if (Global.getSector().getStarSystem("NewSolar") != null) {
-            Global.getSector().getStarSystem("NewSolar").getMemoryWithoutUpdate().set(MusicPlayerPluginImpl.MUSIC_SET_MEM_KEY, "new_solar_system");
-        }
+    private void registerEconomy() {
+        SectorAPI sector = Global.getSector();
+        if (sector == null) return;
+
+        sector.getListenerManager().addListener(new SystemEconomyService());
+        sector.registerPlugin(new CoreCrackingCampaignPlugin());
+        EconomyDataIntel.ensureExists();
     }
 }
