@@ -7,13 +7,13 @@
     "gameVersion":"${gameVersion}",
     "totalConversion":false,
     "jars": [
-        "${jar}",
+        "${jar}"
     ],
     "modPlugin": "${modMain}",
     "dependencies": [
         {
             "id": "lunalib",
-            "name": "LunaLib",
-        },
+            "name": "LunaLib"
+        }
     ]
 }

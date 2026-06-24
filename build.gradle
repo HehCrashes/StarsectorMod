@@ -1,11 +1,12 @@
 plugins {
     id 'java'
+    id 'application'
 }
 
 sourceSets {
     main {
         java.srcDirs = ['src']
-        resources.srcDirs = ['resource']
+        resources.srcDirs = ['resources']
     }
 }
 
@@ -23,6 +24,18 @@ tasks.withType(JavaCompile).configureEach {
 
 repositories {
     mavenCentral()
+    maven {
+        name "SpongePowered"
+        url = uri("https://repo.spongepowered.org/maven/")
+    }
+    maven {
+        name "GTNH"
+        url = uri("https://nexus.gtnewhorizons.com/repository/releases/")
+    }
+}
+
+configurations {
+    mixinFat
 }
 
 dependencies {
@@ -30,6 +43,7 @@ dependencies {
             "${starsectorDir}/starsector-core/starfarer.api.jar",
             "${starsectorDir}/starsector-core/starfarer.api.zip",
             "${starsectorDir}/starsector-core/starfarer_obf.jar",
+            "${starsectorDir}/starsector-core/fs.common_obf.jar",
 
             "${starsectorDir}/starsector-core/json.jar",
 
@@ -43,23 +57,152 @@ dependencies {
             "${starsectorDir}/mods/MagicLib/jars/MagicLib.jar",
             "${starsectorDir}/mods/LazyLib/jars/LazyLib.jar"
     )
+
+    implementation('org.spongepowered:mixin:0.8.7')
+    implementation('org.ow2.asm:asm:9.6')
+    implementation('org.ow2.asm:asm-analysis:9.6')
+    implementation('org.ow2.asm:asm-commons:9.6')
+    implementation('org.ow2.asm:asm-tree:9.6')
+    implementation('org.ow2.asm:asm-util:9.6')
+    implementation('com.google.guava:guava:21.0')
+    implementation('com.google.code.gson:gson:2.8.9')
+
+    mixinFat('org.spongepowered:mixin:0.8.7') {
+        exclude group: 'org.apache.logging.log4j'
+        exclude group: 'org.lwjgl.lwjgl'
+        exclude group: 'commons-io'
+    }
+    mixinFat('org.ow2.asm:asm:9.6')
+    mixinFat('org.ow2.asm:asm-analysis:9.6')
+    mixinFat('org.ow2.asm:asm-commons:9.6')
+    mixinFat('org.ow2.asm:asm-tree:9.6')
+    mixinFat('org.ow2.asm:asm-util:9.6')
+    mixinFat('com.google.guava:guava:21.0')
+    mixinFat('com.google.code.gson:gson:2.8.9')
 }
 
+// Mod jar - loaded by Starsector mod loader
 jar {
     archiveBaseName = "${modid}-${modversion}"
+    destinationDirectory = file("$projectDir/out/${modid}/jars")
 
-    destinationDirectory = file("$projectDir/out/jar/")
+    from sourceSets.main.output.classesDirs
+    exclude 'eco/mixin/**'
+    exclude 'com/fs/starfarer/loading/scripts/B.class'
+
+    from(sourceSets.main.output.resourcesDir) {
+        exclude 'mixin/**'
+        exclude 'META-INF/**'
+        exclude 'data/**'
+        exclude 'graphics/**'
+        exclude 'sounds/**'
+    }
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+// Bridge agent jar - loaded by -javaagent
+def bridgeJarName = 'mixin-corecracking-bridge'
+
+tasks.register('bridgeJar', Jar) {
+    archiveBaseName = bridgeJarName
+    destinationDirectory = file("$projectDir/out/${modid}/jars")
+
+    from(sourceSets.main.output) {
+        include 'eco/mixin/**'
+        include 'com/fs/starfarer/loading/scripts/B.class'
+        include 'mixin/**'
+        include 'META-INF/services/**'
+    }
+
+    from({
+        configurations.mixinFat.collect { jar ->
+            zipTree(jar).matching {
+                exclude 'META-INF/services/org.spongepowered.asm.service.*'
+            }
+        }
+    })
+
+    exclude 'META-INF/maven/**'
+    exclude 'META-INF/*.SF'
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+
+    manifest {
+        attributes(
+            'Premain-Class': 'eco.mixin.AgentEntry',
+            'Can-Retransform-Classes': 'true',
+            'Can-Redefine-Classes': 'true'
+        )
+    }
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+tasks.register('setupVmparams') {
+    group = "_runStarsectorMod"
+
+    doLast {
+        def vmparamsFile = file("${starsectorDir}/vmparams")
+        if (!vmparamsFile.exists()) {
+            println "[CoreCracking] vmparams not found at ${vmparamsFile}"
+            return
+        }
+
+        def agentLine = "-javaagent:..\\mods\\CoreCracking\\jars\\${bridgeJarName}.jar"
+
+        def content = vmparamsFile.text.trim()
+        if (content.contains(agentLine)) {
+            println "[CoreCracking] vmparams already has -javaagent"
+            return
+        }
+
+        def backupFile = file("${starsectorDir}/vmparams.bak")
+        if (!backupFile.exists()) {
+            backupFile.text = content
+            println "[CoreCracking] vmparams backed up to vmparams.bak"
+        }
+
+        def mainClass = 'com.fs.starfarer.StarfarerLauncher'
+        if (content.contains(mainClass)) {
+            content = content.replace(mainClass, agentLine + ' ' + mainClass)
+        } else {
+            content = content + ' ' + agentLine
+        }
+
+        vmparamsFile.text = content
+        println "[CoreCracking] Added -javaagent to vmparams"
+    }
 }
 
 tasks.register('packaging', Sync) {
     group = "_runStarsectorMod"
 
     dependsOn jar
+    dependsOn bridgeJar
 
     from("$projectDir/resources") {
         exclude "mod_info.json"
+        exclude "META-INF"
+        exclude "mixin"
     }
 
+    into "$projectDir/out/${modid}"
+
+    preserve {
+        include 'jars/**'
+    }
+}
+
+tasks.register('toGame', Sync) {
+    group = "_runStarsectorMod"
+
+    dependsOn jar
+    dependsOn bridgeJar
+    dependsOn packaging
+    dependsOn setupVmparams
+
+    from("$projectDir/out/${modid}")
     from("$projectDir/resources/mod_info.json") {
         expand(
                 modid: modid,
@@ -72,24 +215,6 @@ tasks.register('packaging', Sync) {
                 modMain: modMain
         )
     }
-    into "$projectDir/out/${modid}"
-}
-
-tasks.register('outJar', Sync) {
-    group = "_runStarsectorMod"
-
-    dependsOn packaging
-
-    from "$projectDir/out/jar/${modid}-${modversion}.jar"
-    into "$projectDir/out/${modid}/jars"
-}
-
-tasks.register('toGame', Sync) {
-    group = "_runStarsectorMod"
-
-    dependsOn outJar
-
-    from "$projectDir/out/${modid}"
 
     into "${starsectorDir}/mods/${modid}"
 }
@@ -114,7 +239,8 @@ tasks.register('releaseZip', Zip) {
     group = "_runStarsectorMod"
 
     dependsOn clean
-    dependsOn outJar
+    dependsOn jar
+    dependsOn bridgeJar
 
     archiveFileName = "${modid}-${modversion}.zip"
 

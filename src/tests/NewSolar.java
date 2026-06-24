@@ -101,12 +101,13 @@ public class NewSolar {
         capitalSubmarkets.add(Submarkets.SUBMARKET_STORAGE);
         capitalSubmarkets.add(Submarkets.SUBMARKET_BLACK);
 
+        earth.setMarket(capitalMarket);
+        econ.addMarket(capitalMarket, false);
+
         for (String ind : capitalIndustries) capitalMarket.addIndustry(ind);
         for (String con : capitalConditions) capitalMarket.addCondition(con);
         for (String sub : capitalSubmarkets) capitalMarket.addSubmarket(sub);
 
-        earth.setMarket(capitalMarket);
-        econ.addMarket(capitalMarket, false);
         capitalMarket.reapplyConditions();
         earth.getMemoryWithoutUpdate().set(MemFlags.STORY_CRITICAL, true);
 
