@@ -12,6 +12,10 @@
     "modPlugin": "${modMain}",
     "dependencies": [
         {
+            "id": "MixinLib",
+            "name": "MixinLib"
+        },
+        {
             "id": "lunalib",
             "name": "LunaLib"
         }

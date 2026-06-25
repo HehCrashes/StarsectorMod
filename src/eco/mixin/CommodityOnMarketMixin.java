@@ -6,7 +6,6 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.campaign.econ.Market;
 
 @Mixin(targets = "com.fs.starfarer.campaign.econ.CommodityOnMarket")
@@ -23,13 +22,10 @@ public abstract class CommodityOnMarketMixin {
 
     @Inject(method = "updateMaxSupplyAndDemand", at = @At("RETURN"))
     private void ccOverrideAfterUpdate(CallbackInfo ci) {
-        try {
-            if (market == null || !(market instanceof MarketAPI)) {
-                return;
-            }
-            maxSupply = 2;
-            maxDemand = 2;
-        } catch (Throwable ignored) {
+        if (market == null) {
+            return;
         }
+        maxSupply = 2;
+        maxDemand = 2;
     }
 }
