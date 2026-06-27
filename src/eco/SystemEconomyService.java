@@ -1,282 +1,203 @@
 package eco;
 
 import com.fs.starfarer.api.Global;
+import com.fs.starfarer.api.campaign.FactionAPI;
+import com.fs.starfarer.api.campaign.PlanetAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
 import com.fs.starfarer.api.campaign.econ.CommodityOnMarketAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.listeners.EconomyTickListener;
+import eco.data.PlanetMarket;
+import eco.data.SystemMarket;
+import eco.data.Trade;
+import eco.data.TradePair;
+import org.lwjgl.Sys;
 
 import java.util.*;
 
 public class SystemEconomyService implements EconomyTickListener {
-
-    private static final String MEM_KEY = "$corecracking_econ_data";
-    private static final String MONTH_KEY = "$corecracking_econ_month";
-
-    @Override
-    public void reportEconomyTick(int iterIndex) {}
-
-    @Override
-    public void reportEconomyMonthEnd() {
-        runEconomyCalculation();
-    }
-
-    private void runEconomyCalculation() {
-        List<MarketAPI> allMarkets = Global.getSector().getEconomy().getMarketsCopy();
-        Map<String, List<MarketAPI>> marketsBySystem = groupMarketsByStarSystem(allMarkets);
-        int currentMonth = Global.getSector().getClock().getMonth();
-
-        for (Map.Entry<String, List<MarketAPI>> entry : marketsBySystem.entrySet()) {
-            String systemId = entry.getKey();
-            List<MarketAPI> systemMarkets = entry.getValue();
-
-            Map<String, List<SupplyEntry>> supplyByCommodity = new HashMap<>();
-            Map<String, List<DemandEntry>> demandByCommodity = new HashMap<>();
-
-            collectSupplyAndDemand(systemMarkets, supplyByCommodity, demandByCommodity);
-
-            Map<String, List<SupplyEntry>> supplyCopy = deepCopySupply(supplyByCommodity);
-            Map<String, List<DemandEntry>> demandCopy = deepCopyDemand(demandByCommodity);
-
-            matchSameFaction(supplyCopy, demandCopy);
-            matchCrossFaction(supplyCopy, demandCopy);
-
-            storeResults(systemMarkets, supplyCopy, demandCopy, supplyByCommodity, demandByCommodity, currentMonth);
-        }
-    }
-
-    private Map<String, List<MarketAPI>> groupMarketsByStarSystem(List<MarketAPI> allMarkets) {
-        Map<String, List<MarketAPI>> result = new HashMap<>();
+    /**{@code <systemId, PlanetMarkets in system> }*/
+    private Map<StarSystemAPI, List<PlanetMarket>> planetMarkets;
+    /**{@code <systemId, SystemMarket> }*/
+    private Map<StarSystemAPI, SystemMarket> systemMarkets;
+    /** 从allMarkets到system->Markets*/
+    private Map<StarSystemAPI, List<PlanetMarket>> getMarkets(List<MarketAPI> allMarkets) {
+        Map<StarSystemAPI, List<PlanetMarket>> result = new HashMap<>();
         for (MarketAPI market : allMarkets) {
             if (!market.isInEconomy()) continue;
+
             StarSystemAPI system = market.getStarSystem();
-            if (system == null) continue;
-            String systemId = system.getId();
-            result.computeIfAbsent(systemId, k -> new ArrayList<>()).add(market);
+            PlanetAPI planet = market.getPlanetEntity();
+            FactionAPI faction = market.getFaction();
+            if (system == null || planet == null) continue;
+
+            PlanetMarket planetMarket = new PlanetMarket(system, planet, market, faction);
+            planetMarket.updateSupplyAndDemand();
+            result.computeIfAbsent(system, k -> new ArrayList<>()).add(planetMarket);
         }
         return result;
     }
-
-    private void collectSupplyAndDemand(List<MarketAPI> systemMarkets,
-                                         Map<String, List<SupplyEntry>> supplyByCommodity,
-                                         Map<String, List<DemandEntry>> demandByCommodity) {
-        for (MarketAPI market : systemMarkets) {
-            String marketId = market.getId();
-            String marketName = market.getName();
-            String factionId = market.getFactionId();
-            if (market.getFaction() != null) {
-                factionId = market.getFaction().getId();
+    /** 从system->Markets到systemMarkets*/
+    private void getSystemMarkets() {
+        for(Map.Entry<StarSystemAPI, List<PlanetMarket>> systemPMs : planetMarkets.entrySet()){
+            SystemMarket systemMarket = new SystemMarket(systemPMs.getValue().get(0).getSystem());
+            for (PlanetMarket planetMarket : systemPMs.getValue()) {
+                systemMarket.addPlanetMarket(planetMarket.getPlanet(), planetMarket);
             }
-
-            for (CommodityOnMarketAPI com : market.getAllCommodities()) {
-                if (com.isNonEcon()) continue;
-                if (com.getCommodity().isMeta()) continue;
-
-                String commodityId = com.getId();
-                com.updateMaxSupplyAndDemand();
-                int supply = com.getMaxSupply();
-                int demand = com.getMaxDemand();
-
-                if (supply > 0) {
-                    supplyByCommodity.computeIfAbsent(commodityId, k -> new ArrayList<>())
-                            .add(new SupplyEntry(commodityId, supply, marketId, marketName, factionId));
-                }
-                if (demand > 0) {
-                    demandByCommodity.computeIfAbsent(commodityId, k -> new ArrayList<>())
-                            .add(new DemandEntry(commodityId, demand, marketId, marketName, factionId));
-                }
-            }
+            systemMarket.updateSupplyAndDemand();
+            systemMarkets.put(systemPMs.getKey(), systemMarket);
         }
     }
-
-    private Map<String, List<SupplyEntry>> deepCopySupply(Map<String, List<SupplyEntry>> source) {
-        Map<String, List<SupplyEntry>> copy = new HashMap<>();
-        for (Map.Entry<String, List<SupplyEntry>> entry : source.entrySet()) {
-            List<SupplyEntry> listCopy = new ArrayList<>();
-            for (SupplyEntry se : entry.getValue()) {
-                listCopy.add(new SupplyEntry(se.commodityId, se.quantity, se.marketId, se.marketName, se.factionId));
-            }
-            copy.put(entry.getKey(), listCopy);
+    /** 匹配systemMarkets中订单*/
+    private void matchSystemTrade(SystemMarket systemMarket){
+        Map<String,Map<FactionAPI,List<Trade>>> supplyTrades = new HashMap<>();
+        Map<String,Map<FactionAPI,List<Trade>>> demandTrades = new HashMap<>();
+        for(Trade trade : systemMarket.getSupplyList()){
+            supplyTrades.computeIfAbsent(trade.getItemId(), i -> new HashMap<>()).computeIfAbsent(trade.getFaction(), j -> new ArrayList<>()).add(trade);
         }
-        return copy;
-    }
-
-    private Map<String, List<DemandEntry>> deepCopyDemand(Map<String, List<DemandEntry>> source) {
-        Map<String, List<DemandEntry>> copy = new HashMap<>();
-        for (Map.Entry<String, List<DemandEntry>> entry : source.entrySet()) {
-            List<DemandEntry> listCopy = new ArrayList<>();
-            for (DemandEntry de : entry.getValue()) {
-                listCopy.add(new DemandEntry(de.commodityId, de.quantity, de.marketId, de.marketName, de.factionId));
-            }
-            copy.put(entry.getKey(), listCopy);
+        for(Trade trade : systemMarket.getDemandList()){
+            demandTrades.computeIfAbsent(trade.getItemId(), i -> new HashMap<>()).computeIfAbsent(trade.getFaction(), j -> new ArrayList<>()).add(trade);
         }
-        return copy;
-    }
-
-    private void matchSameFaction(Map<String, List<SupplyEntry>> supplyCopy,
-                                   Map<String, List<DemandEntry>> demandCopy) {
-        for (String commodityId : supplyCopy.keySet()) {
-            List<SupplyEntry> supplies = supplyCopy.get(commodityId);
-            List<DemandEntry> demands = demandCopy.get(commodityId);
-            if (demands == null) continue;
-
-            for (DemandEntry demand : demands) {
-                if (demand.quantity <= 0) continue;
-                for (SupplyEntry supply : supplies) {
-                    if (supply.quantity <= 0) continue;
-                    if (!supply.factionId.equals(demand.factionId)) continue;
-                    executeTrade(supply, demand, true);
-                    if (demand.quantity <= 0) break;
+        //遍历每个物品
+        for(Map.Entry<String,Map<FactionAPI,List<Trade>>> sftPair : supplyTrades.entrySet()){
+            String itemID = sftPair.getKey();
+            if (demandTrades.get(itemID) == null) continue;
+            //遍历每个物品的每个势力
+            for(Map.Entry<FactionAPI,List<Trade>> ftPair : sftPair.getValue().entrySet()){
+                FactionAPI faction = ftPair.getKey();
+                if (demandTrades.get(itemID).get(faction) == null) continue;
+                //遍历每个物品的每个势力的每个供应单
+                for(Trade supplyTrade : ftPair.getValue()){
+                    if (supplyTrade.getItemNum() <= 0) continue;
+                    //遍历该物品的同势力的每个供应单
+                    for(Trade demandTrade : demandTrades.get(itemID).get(faction)){
+                        if (demandTrade.getItemNum() <= 0) continue;
+                        //达成交易
+                        int itemNum = Math.min(supplyTrade.getItemNum(), demandTrade.getItemNum());
+                        TradePair tradePair = new TradePair(supplyTrade,demandTrade,itemID,itemNum);
+                        supplyTrade.addItemNum(-itemNum);
+                        demandTrade.addItemNum(-itemNum);
+                        systemMarket.getPlanetMarkets().get(supplyTrade.getPlanet()).addSupplyTrade(tradePair);
+                        systemMarket.getPlanetMarkets().get(demandTrade.getPlanet()).addDemandTrade(tradePair);
+                        if (supplyTrade.getItemNum() <= 0) break;
+                    }
                 }
             }
         }
-    }
-
-    private void matchCrossFaction(Map<String, List<SupplyEntry>> supplyCopy,
-                                    Map<String, List<DemandEntry>> demandCopy) {
-        for (String commodityId : supplyCopy.keySet()) {
-            List<SupplyEntry> supplies = supplyCopy.get(commodityId);
-            List<DemandEntry> demands = demandCopy.get(commodityId);
-            if (demands == null) continue;
-
-            for (DemandEntry demand : demands) {
-                if (demand.quantity <= 0) continue;
-                for (SupplyEntry supply : supplies) {
-                    if (supply.quantity <= 0) continue;
-                    executeTrade(supply, demand, true);
-                    if (demand.quantity <= 0) break;
+        //遍历每个物品
+        for(Map.Entry<String,Map<FactionAPI,List<Trade>>> sftPair : supplyTrades.entrySet()){
+            String itemID = sftPair.getKey();
+            if (demandTrades.get(itemID) == null) continue;
+            //遍历每个物品的每个势力
+            for(Map.Entry<FactionAPI,List<Trade>> ftPair : sftPair.getValue().entrySet()){
+                //遍历每个物品的每个势力的每个供应单
+                for(Trade supplyTrade : ftPair.getValue()){
+                    if (supplyTrade.getItemNum() <= 0) continue;
+                    //遍历该物品的每个势力
+                    for(Map.Entry<FactionAPI,List<Trade>> dftPair : demandTrades.get(itemID).entrySet()){
+                        for(Trade demandTrade : dftPair.getValue()){
+                            if (demandTrade.getItemNum() <= 0) continue;
+                            //达成交易
+                            int itemNum = Math.min(supplyTrade.getItemNum(), demandTrade.getItemNum());
+                            TradePair tradePair = new TradePair(supplyTrade,demandTrade,itemID,itemNum);
+                            supplyTrade.addItemNum(-itemNum);
+                            demandTrade.addItemNum(-itemNum);
+                            systemMarket.getPlanetMarkets().get(supplyTrade.getPlanet()).addSupplyTrade(tradePair);
+                            systemMarket.getPlanetMarkets().get(demandTrade.getPlanet()).addDemandTrade(tradePair);
+                            if (supplyTrade.getItemNum() <= 0) break;
+                        }
+                        if (supplyTrade.getItemNum() <= 0) break;
+                    }
                 }
             }
         }
+        systemMarket.cleanTrade();
+        for (Trade trade : systemMarket.getSupplyList()) {
+            if (trade.getItemNum() > 0) systemMarket.addSupply(trade);
+        }
+        for (Trade trade : systemMarket.getDemandList()) {
+            if (trade.getItemNum() > 0) systemMarket.addDemand(trade);
+        }
     }
-
-    private void executeTrade(SupplyEntry supply, DemandEntry demand, boolean isIntraSystem) {
-        int tradeQty;
-        if (demand.quantity > supply.quantity) {
-            tradeQty = supply.quantity;
-            demand.quantity -= supply.quantity;
-            supply.quantity = 0;
-        } else if (demand.quantity < supply.quantity) {
-            tradeQty = demand.quantity;
-            supply.quantity -= demand.quantity;
-            demand.quantity = 0;
-        } else {
-            tradeQty = supply.quantity;
-            supply.quantity = 0;
-            demand.quantity = 0;
+    /** 匹配跨systemMarkets订单*/
+    private void matchInterSystemTrade(){
+        Map<String,Map<FactionAPI,List<Trade>>> supplyTrades = new HashMap<>();
+        Map<String,Map<FactionAPI,List<Trade>>> demandTrades = new HashMap<>();
+        for(Map.Entry<StarSystemAPI,SystemMarket> systemMarketPair : systemMarkets.entrySet()){
+            for(Trade trade : systemMarketPair.getValue().getSupply()){
+                supplyTrades.computeIfAbsent(trade.getItemId(), i -> new HashMap<>()).computeIfAbsent(trade.getFaction(), j -> new ArrayList<>()).add(trade);
+            }
+            for(Trade trade : systemMarketPair.getValue().getDemand()){
+                demandTrades.computeIfAbsent(trade.getItemId(), i -> new HashMap<>()).computeIfAbsent(trade.getFaction(), j -> new ArrayList<>()).add(trade);
+            }
         }
-
-        supply.tradeRecords.add(new TradeRecord(
-                supply.commodityId, tradeQty,
-                supply.marketId, supply.marketName, supply.factionId,
-                demand.marketId, demand.marketName, demand.factionId,
-                isIntraSystem
-        ));
-        demand.tradeRecords.add(new TradeRecord(
-                demand.commodityId, tradeQty,
-                supply.marketId, supply.marketName, supply.factionId,
-                demand.marketId, demand.marketName, demand.factionId,
-                isIntraSystem
-        ));
-    }
-
-    private void storeResults(List<MarketAPI> systemMarkets,
-                               Map<String, List<SupplyEntry>> supplyCopy,
-                               Map<String, List<DemandEntry>> demandCopy,
-                               Map<String, List<SupplyEntry>> supplyOriginal,
-                               Map<String, List<DemandEntry>> demandOriginal,
-                               int currentMonth) {
-        Map<String, PlanetTradeData> dataMap = new HashMap<>();
-        for (MarketAPI market : systemMarkets) {
-            dataMap.put(market.getId(), new PlanetTradeData(market.getId()));
-        }
-        for (Map.Entry<String, PlanetTradeData> entry : dataMap.entrySet()) {
-            entry.getValue().lastComputedMonth = currentMonth;
-        }
-
-        // Collect intra-system exports from supply entries' tradeRecords
-        for (List<SupplyEntry> supplyList : supplyCopy.values()) {
-            for (SupplyEntry se : supplyList) {
-                PlanetTradeData data = dataMap.get(se.marketId);
-                if (data == null) continue;
-                for (TradeRecord tr : se.tradeRecords) {
-                    data.intraSystemExports.add(tr);
+        //遍历每个物品
+        for(Map.Entry<String,Map<FactionAPI,List<Trade>>> sftPair : supplyTrades.entrySet()){
+            String itemID = sftPair.getKey();
+            if (demandTrades.get(itemID) == null) continue;
+            //遍历每个物品的每个势力
+            for(Map.Entry<FactionAPI,List<Trade>> ftPair : sftPair.getValue().entrySet()){
+                FactionAPI faction = ftPair.getKey();
+                if (demandTrades.get(itemID).get(faction) == null) continue;
+                //遍历每个物品的每个势力的每个供应单
+                for(Trade supplyTrade : ftPair.getValue()){
+                    if (supplyTrade.getItemNum() <= 0) continue;
+                    //遍历该物品的同势力的每个供应单
+                    for(Trade demandTrade : demandTrades.get(itemID).get(faction)){
+                        if (demandTrade.getItemNum() <= 0) continue;
+                        //达成交易
+                        int itemNum = Math.min(supplyTrade.getItemNum(), demandTrade.getItemNum());
+                        TradePair tradePair = new TradePair(supplyTrade,demandTrade,itemID,itemNum);
+                        supplyTrade.addItemNum(-itemNum);
+                        demandTrade.addItemNum(-itemNum);
+                        systemMarkets.get(supplyTrade.getSystem()).getPlanetMarkets().get(supplyTrade.getPlanet()).addSupplyTrade(tradePair);
+                        systemMarkets.get(demandTrade.getSystem()).getPlanetMarkets().get(demandTrade.getPlanet()).addDemandTrade(tradePair);
+                        if (supplyTrade.getItemNum() <= 0) break;
+                    }
                 }
             }
         }
-
-        // Collect intra-system imports from demand entries' tradeRecords
-        for (List<DemandEntry> demandList : demandCopy.values()) {
-            for (DemandEntry de : demandList) {
-                PlanetTradeData data = dataMap.get(de.marketId);
-                if (data == null) continue;
-                for (TradeRecord tr : de.tradeRecords) {
-                    data.intraSystemImports.add(tr);
+        //遍历每个物品
+        for(Map.Entry<String,Map<FactionAPI,List<Trade>>> sftPair : supplyTrades.entrySet()){
+            String itemID = sftPair.getKey();
+            if (demandTrades.get(itemID) == null) continue;
+            //遍历每个物品的每个势力
+            for(Map.Entry<FactionAPI,List<Trade>> ftPair : sftPair.getValue().entrySet()){
+                //遍历每个物品的每个势力的每个供应单
+                for(Trade supplyTrade : ftPair.getValue()){
+                    if (supplyTrade.getItemNum() <= 0) continue;
+                    //遍历该物品的每个势力
+                    for(Map.Entry<FactionAPI,List<Trade>> dftPair : demandTrades.get(itemID).entrySet()){
+                        for(Trade demandTrade : dftPair.getValue()){
+                            if (demandTrade.getItemNum() <= 0) continue;
+                            //达成交易
+                            int itemNum = Math.min(supplyTrade.getItemNum(), demandTrade.getItemNum());
+                            TradePair tradePair = new TradePair(supplyTrade,demandTrade,itemID,itemNum);
+                            supplyTrade.addItemNum(-itemNum);
+                            demandTrade.addItemNum(-itemNum);
+                            systemMarkets.get(supplyTrade.getSystem()).getPlanetMarkets().get(supplyTrade.getPlanet()).addSupplyTrade(tradePair);
+                            systemMarkets.get(demandTrade.getSystem()).getPlanetMarkets().get(demandTrade.getPlanet()).addDemandTrade(tradePair);
+                            if (supplyTrade.getItemNum() <= 0) break;
+                        }
+                        if (supplyTrade.getItemNum() <= 0) break;
+                    }
                 }
             }
         }
-
-        // Unmatched supplies -> inter-system exports
-        for (List<SupplyEntry> supplyList : supplyCopy.values()) {
-            for (SupplyEntry se : supplyList) {
-                if (se.quantity > 0) {
-                    PlanetTradeData data = dataMap.get(se.marketId);
-                    if (data == null) continue;
-                    data.interSystemExports.add(new TradeRecord(
-                            se.commodityId, se.quantity,
-                            se.marketId, se.marketName, se.factionId,
-                            "", "外部市场", "",
-                            false
-                    ));
-                }
-            }
+        for(Map.Entry<StarSystemAPI,SystemMarket> systemMarketPair : systemMarkets.entrySet()){
+            systemMarketPair.getValue().cleanTrade();
         }
-
-        // Unmatched demands -> inter-system imports
-        for (List<DemandEntry> demandList : demandCopy.values()) {
-            for (DemandEntry de : demandList) {
-                if (de.quantity > 0) {
-                    PlanetTradeData data = dataMap.get(de.marketId);
-                    if (data == null) continue;
-                    data.interSystemImports.add(new TradeRecord(
-                            de.commodityId, de.quantity,
-                            "", "外部市场", "",
-                            de.marketId, de.marketName, de.factionId,
-                            false
-                    ));
-                }
-            }
-        }
-
-        // Store in market memory
-        for (PlanetTradeData data : dataMap.values()) {
-            MarketAPI market = Global.getSector().getEconomy().getMarket(data.marketId);
-            if (market != null) {
-                market.getMemoryWithoutUpdate().set(MEM_KEY, data);
-                market.getMemoryWithoutUpdate().set(MONTH_KEY, currentMonth);
-            }
-        }
-
-        EconomyDataIntel.ensureIntelsForAllSystems();
     }
-
-    public static PlanetTradeData getTradeData(MarketAPI market) {
-        if (market == null) return null;
-        return (PlanetTradeData) market.getMemoryWithoutUpdate().get(MEM_KEY);
-    }
-
-    public static int getLastComputedMonth(MarketAPI market) {
-        if (market == null) return -1;
-        Integer month = (Integer) market.getMemoryWithoutUpdate().get(MONTH_KEY);
-        return month != null ? month : -1;
-    }
-
-    public static String getCommodityName(String commodityId) {
-        if (commodityId == null || commodityId.isEmpty()) return "?";
-        try {
-            return Global.getSettings().getCommoditySpec(commodityId).getName();
-        } catch (Exception e) {
-            return commodityId;
+    @Override
+    public void reportEconomyTick(int iterIndex) {}
+    @Override
+    public void reportEconomyMonthEnd() {
+        List<MarketAPI> allMarkets = Global.getSector().getEconomy().getMarketsCopy();
+        planetMarkets = getMarkets(allMarkets);
+        getSystemMarkets();
+        for(Map.Entry<StarSystemAPI,SystemMarket> systemMarketPair : systemMarkets.entrySet()){
+            matchSystemTrade(systemMarketPair.getValue());
         }
+
     }
 }

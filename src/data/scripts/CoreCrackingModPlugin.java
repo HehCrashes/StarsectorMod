@@ -46,6 +46,5 @@ public class CoreCrackingModPlugin extends BaseModPlugin {
         if (sector == null) return;
 
         sector.getListenerManager().addListener(new SystemEconomyService());
-        EconomyDataIntel.ensureIntelsForAllSystems();
     }
 }
