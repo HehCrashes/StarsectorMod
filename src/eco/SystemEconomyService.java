@@ -4,24 +4,22 @@ import com.fs.starfarer.api.Global;
 import com.fs.starfarer.api.campaign.FactionAPI;
 import com.fs.starfarer.api.campaign.PlanetAPI;
 import com.fs.starfarer.api.campaign.StarSystemAPI;
-import com.fs.starfarer.api.campaign.econ.CommodityOnMarketAPI;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 import com.fs.starfarer.api.campaign.listeners.EconomyTickListener;
 import eco.data.PlanetMarket;
 import eco.data.SystemMarket;
 import eco.data.Trade;
 import eco.data.TradePair;
-import org.lwjgl.Sys;
 
 import java.util.*;
 
 public class SystemEconomyService implements EconomyTickListener {
     /**{@code <systemId, PlanetMarkets in system> }*/
-    private Map<StarSystemAPI, List<PlanetMarket>> planetMarkets;
+    private static Map<StarSystemAPI, List<PlanetMarket>> planetMarkets = new HashMap<>();
     /**{@code <systemId, SystemMarket> }*/
-    private Map<StarSystemAPI, SystemMarket> systemMarkets;
+    private static Map<StarSystemAPI, SystemMarket> systemMarkets = new HashMap<>();
     /** 从allMarkets到system->Markets*/
-    private Map<StarSystemAPI, List<PlanetMarket>> getMarkets(List<MarketAPI> allMarkets) {
+    private static Map<StarSystemAPI, List<PlanetMarket>> getMarkets(List<MarketAPI> allMarkets) {
         Map<StarSystemAPI, List<PlanetMarket>> result = new HashMap<>();
         for (MarketAPI market : allMarkets) {
             if (!market.isInEconomy()) continue;
@@ -38,7 +36,8 @@ public class SystemEconomyService implements EconomyTickListener {
         return result;
     }
     /** 从system->Markets到systemMarkets*/
-    private void getSystemMarkets() {
+    private static void getSystemMarkets() {
+        systemMarkets = new HashMap<>();
         for(Map.Entry<StarSystemAPI, List<PlanetMarket>> systemPMs : planetMarkets.entrySet()){
             SystemMarket systemMarket = new SystemMarket(systemPMs.getValue().get(0).getSystem());
             for (PlanetMarket planetMarket : systemPMs.getValue()) {
@@ -49,7 +48,7 @@ public class SystemEconomyService implements EconomyTickListener {
         }
     }
     /** 匹配systemMarkets中订单*/
-    private void matchSystemTrade(SystemMarket systemMarket){
+    private static void matchSystemTrade(SystemMarket systemMarket){
         Map<String,Map<FactionAPI,List<Trade>>> supplyTrades = new HashMap<>();
         Map<String,Map<FactionAPI,List<Trade>>> demandTrades = new HashMap<>();
         for(Trade trade : systemMarket.getSupplyList()){
@@ -120,7 +119,7 @@ public class SystemEconomyService implements EconomyTickListener {
         }
     }
     /** 匹配跨systemMarkets订单*/
-    private void matchInterSystemTrade(){
+    private static void matchInterSystemTrade(){
         Map<String,Map<FactionAPI,List<Trade>>> supplyTrades = new HashMap<>();
         Map<String,Map<FactionAPI,List<Trade>>> demandTrades = new HashMap<>();
         for(Map.Entry<StarSystemAPI,SystemMarket> systemMarketPair : systemMarkets.entrySet()){
@@ -148,6 +147,7 @@ public class SystemEconomyService implements EconomyTickListener {
                         //达成交易
                         int itemNum = Math.min(supplyTrade.getItemNum(), demandTrade.getItemNum());
                         TradePair tradePair = new TradePair(supplyTrade,demandTrade,itemID,itemNum);
+                        tradePair.setIntraSystem(false);
                         supplyTrade.addItemNum(-itemNum);
                         demandTrade.addItemNum(-itemNum);
                         systemMarkets.get(supplyTrade.getSystem()).getPlanetMarkets().get(supplyTrade.getPlanet()).addSupplyTrade(tradePair);
@@ -173,6 +173,7 @@ public class SystemEconomyService implements EconomyTickListener {
                             //达成交易
                             int itemNum = Math.min(supplyTrade.getItemNum(), demandTrade.getItemNum());
                             TradePair tradePair = new TradePair(supplyTrade,demandTrade,itemID,itemNum);
+                            tradePair.setIntraSystem(false);
                             supplyTrade.addItemNum(-itemNum);
                             demandTrade.addItemNum(-itemNum);
                             systemMarkets.get(supplyTrade.getSystem()).getPlanetMarkets().get(supplyTrade.getPlanet()).addSupplyTrade(tradePair);
@@ -195,9 +196,97 @@ public class SystemEconomyService implements EconomyTickListener {
         List<MarketAPI> allMarkets = Global.getSector().getEconomy().getMarketsCopy();
         planetMarkets = getMarkets(allMarkets);
         getSystemMarkets();
-        for(Map.Entry<StarSystemAPI,SystemMarket> systemMarketPair : systemMarkets.entrySet()){
+        for (Map.Entry<StarSystemAPI, SystemMarket> systemMarketPair : systemMarkets.entrySet()) {
             matchSystemTrade(systemMarketPair.getValue());
         }
+        matchInterSystemTrade();
+        persistTradeData();
+        EconomyDataIntel.ensureIntelsForAllSystems();
+    }
 
+    private static void persistTradeData() {
+        int currentMonth = Global.getSector().getClock().getMonth();
+        for (Map.Entry<StarSystemAPI, List<PlanetMarket>> entry : planetMarkets.entrySet()) {
+            for (PlanetMarket pm : entry.getValue()) {
+                MarketAPI market = pm.getMarket();
+                PlanetTradeData data = new PlanetTradeData(market.getId());
+                data.lastComputedMonth = currentMonth;
+
+                for (TradePair tp : pm.getSupplyTrade()) {
+                    String srcName = market.getName();
+                    String srcFac = pm.getFaction() != null ? pm.getFaction().getDisplayName() : "?";
+                    String dstName = tp.getToMarket() != null ? tp.getToMarket().getName() : "外部市场";
+                    String dstFac = tp.getToFaction() != null ? tp.getToFaction().getDisplayName() : "?";
+                    TradeRecord tr = new TradeRecord(tp.getItemId(), tp.getItemNum(),
+                            srcName, srcFac, dstName, dstFac, tp.isIntraSystem());
+                    if (tp.isIntraSystem()) {
+                        data.intraSystemExports.add(tr);
+                    } else {
+                        data.interSystemExports.add(tr);
+                    }
+                }
+
+                for (TradePair tp : pm.getDemandTrade()) {
+                    String srcName = tp.getFromMarket() != null ? tp.getFromMarket().getName() : "外部市场";
+                    String srcFac = tp.getFromFaction() != null ? tp.getFromFaction().getDisplayName() : "?";
+                    String dstName = market.getName();
+                    String dstFac = pm.getFaction() != null ? pm.getFaction().getDisplayName() : "?";
+                    TradeRecord tr = new TradeRecord(tp.getItemId(), tp.getItemNum(),
+                            srcName, srcFac, dstName, dstFac, tp.isIntraSystem());
+                    if (tp.isIntraSystem()) {
+                        data.intraSystemImports.add(tr);
+                    } else {
+                        data.interSystemImports.add(tr);
+                    }
+                }
+
+                market.getMemoryWithoutUpdate().set(MEM_KEY, data);
+                market.getMemoryWithoutUpdate().set(MONTH_KEY, currentMonth);
+
+                Map<String, String> commodityText = new LinkedHashMap<>();
+                for (String id : pm.getCommodityIds()) {
+                    int s = pm.getSupply(id);
+                    int d = pm.getDemand(id);
+                    String name = getCommodityName(id);
+                    commodityText.put(id, name + "  供应+" + s + "  消耗-" + d);
+                }
+                market.getMemoryWithoutUpdate().set(MEM_KEY + "_display", commodityText);
+            }
+        }
+    }
+
+    private static final String MEM_KEY = "$corecracking_econ_data";
+    private static final String MONTH_KEY = "$corecracking_econ_month";
+
+    public static PlanetTradeData getTradeData(MarketAPI market) {
+        if (market == null) return null;
+        return (PlanetTradeData) market.getMemoryWithoutUpdate().get(MEM_KEY);
+    }
+
+    public static int getLastComputedMonth(MarketAPI market) {
+        if (market == null) return -1;
+        Integer month = (Integer) market.getMemoryWithoutUpdate().get(MONTH_KEY);
+        return month != null ? month : -1;
+    }
+
+    public static String getCommodityName(String commodityId) {
+        if (commodityId == null || commodityId.isEmpty()) return "?";
+        try {
+            return Global.getSettings().getCommoditySpec(commodityId).getName();
+        } catch (Exception e) {
+            return commodityId;
+        }
+    }
+
+    public static PlanetMarket getPlanetMarket(MarketAPI market) {
+        if (market == null) return null;
+        for(Map.Entry<StarSystemAPI, List<PlanetMarket>> list : planetMarkets.entrySet()){
+            for(PlanetMarket planetMarket : list.getValue()){
+                if(planetMarket.getMarket() == market){
+                    return planetMarket;
+                }
+            }
+        }
+        return null;
     }
 }

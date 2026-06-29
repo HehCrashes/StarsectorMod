@@ -16,6 +16,7 @@ public class TradePair{
     private FactionAPI toFaction;
     private String itemId;
     private int itemNum;
+    private boolean intraSystem = true;
     public TradePair(StarSystemAPI fromSystem, PlanetAPI fromPlanet, MarketAPI fromMarket, FactionAPI fromFaction, StarSystemAPI toSystem, PlanetAPI toPlanet, MarketAPI toMarket, FactionAPI toFaction, String itemId, int itemNum) {
         this.fromSystem = fromSystem;
         this.fromPlanet = fromPlanet;
@@ -40,4 +41,16 @@ public class TradePair{
         this.itemId = itemId;
         this.itemNum = itemNum;
     }
+    public StarSystemAPI getFromSystem() { return fromSystem; }
+    public PlanetAPI getFromPlanet() { return fromPlanet; }
+    public MarketAPI getFromMarket() { return fromMarket; }
+    public FactionAPI getFromFaction() { return fromFaction; }
+    public StarSystemAPI getToSystem() { return toSystem; }
+    public PlanetAPI getToPlanet() { return toPlanet; }
+    public MarketAPI getToMarket() { return toMarket; }
+    public FactionAPI getToFaction() { return toFaction; }
+    public String getItemId() { return itemId; }
+    public int getItemNum() { return itemNum; }
+    public boolean isIntraSystem() { return intraSystem; }
+    public void setIntraSystem(boolean intraSystem) { this.intraSystem = intraSystem; }
 }

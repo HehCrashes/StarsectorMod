@@ -7,10 +7,7 @@ import com.fs.starfarer.api.campaign.econ.CommodityOnMarketAPI;
 import com.fs.starfarer.api.campaign.econ.Industry;
 import com.fs.starfarer.api.campaign.econ.MarketAPI;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class PlanetMarket{
     private StarSystemAPI system;
@@ -23,14 +20,15 @@ public class PlanetMarket{
     // 生产/进口 订单
     private List<TradePair> supplyTrade = new ArrayList<>();
     private List<TradePair> demandTrade = new ArrayList<>();
-    private float getPeopleScale(int size){
-        if (size == 1) return 0.01f;
+    private float getPeopleScale(int size) {
+        if (size <= 1) return 0.01f;
         if (size == 2) return 0.10f;
         if (size == 3) return 1.0f;
 
         float result = 1.0f;
+        final float r = 0.772f;
         for (int s = 4; s <= size; s++) {
-            result *= (float)(10.0 * Math.pow(0.8032, s - 4));
+            result *= (1.0f + 9.0f * (float) Math.pow(r, s - 4));
         }
         return result;
     }
@@ -62,7 +60,7 @@ public class PlanetMarket{
 
             int sd = totalSupply - totalDemand;
             if (sd > 0) supply.put(item.getId(), sd);
-            if (sd < 0) demand.put(item.getId(), sd);
+            if (sd < 0) demand.put(item.getId(), -sd);
         }
     }
 
@@ -91,5 +89,11 @@ public class PlanetMarket{
     }
     public void addDemandTrade(TradePair demandTradePair) {
         this.demandTrade.add(demandTradePair);
+    }
+    public Set<String> getCommodityIds() {
+        Set<String> ids = new HashSet<>();
+        ids.addAll(supply.keySet());
+        ids.addAll(demand.keySet());
+        return ids;
     }
 }
