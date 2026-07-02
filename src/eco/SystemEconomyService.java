@@ -206,6 +206,10 @@ public class SystemEconomyService implements EconomyTickListener {
 
     private static void persistTradeData() {
         int currentMonth = Global.getSector().getClock().getMonth();
+        String rowsKey = MEM_KEY + "_rows";
+        for (MarketAPI m : Global.getSector().getEconomy().getMarketsCopy()) {
+            m.getMemoryWithoutUpdate().set(rowsKey, null);
+        }
         for (Map.Entry<StarSystemAPI, List<PlanetMarket>> entry : planetMarkets.entrySet()) {
             for (PlanetMarket pm : entry.getValue()) {
                 MarketAPI market = pm.getMarket();
@@ -215,10 +219,12 @@ public class SystemEconomyService implements EconomyTickListener {
                 for (TradePair tp : pm.getSupplyTrade()) {
                     String srcName = market.getName();
                     String srcFac = pm.getFaction() != null ? pm.getFaction().getDisplayName() : "?";
+                    String srcSys = pm.getSystem() != null ? pm.getSystem().getName() : "?";
                     String dstName = tp.getToMarket() != null ? tp.getToMarket().getName() : "外部市场";
                     String dstFac = tp.getToFaction() != null ? tp.getToFaction().getDisplayName() : "?";
+                    String dstSys = tp.getToSystem() != null ? tp.getToSystem().getName() : "?";
                     TradeRecord tr = new TradeRecord(tp.getItemId(), tp.getItemNum(),
-                            srcName, srcFac, dstName, dstFac, tp.isIntraSystem());
+                            srcName, srcFac, srcSys, dstName, dstFac, dstSys, tp.isIntraSystem());
                     if (tp.isIntraSystem()) {
                         data.intraSystemExports.add(tr);
                     } else {
@@ -229,10 +235,12 @@ public class SystemEconomyService implements EconomyTickListener {
                 for (TradePair tp : pm.getDemandTrade()) {
                     String srcName = tp.getFromMarket() != null ? tp.getFromMarket().getName() : "外部市场";
                     String srcFac = tp.getFromFaction() != null ? tp.getFromFaction().getDisplayName() : "?";
+                    String srcSys = tp.getFromSystem() != null ? tp.getFromSystem().getName() : "?";
                     String dstName = market.getName();
                     String dstFac = pm.getFaction() != null ? pm.getFaction().getDisplayName() : "?";
+                    String dstSys = pm.getSystem() != null ? pm.getSystem().getName() : "?";
                     TradeRecord tr = new TradeRecord(tp.getItemId(), tp.getItemNum(),
-                            srcName, srcFac, dstName, dstFac, tp.isIntraSystem());
+                            srcName, srcFac, srcSys, dstName, dstFac, dstSys, tp.isIntraSystem());
                     if (tp.isIntraSystem()) {
                         data.intraSystemImports.add(tr);
                     } else {
@@ -243,16 +251,128 @@ public class SystemEconomyService implements EconomyTickListener {
                 market.getMemoryWithoutUpdate().set(MEM_KEY, data);
                 market.getMemoryWithoutUpdate().set(MONTH_KEY, currentMonth);
 
-                Map<String, String> commodityText = new LinkedHashMap<>();
+                List<String> rows = new ArrayList<>();
                 for (String id : pm.getCommodityIds()) {
-                    int s = pm.getSupply(id);
-                    int d = pm.getDemand(id);
-                    String name = getCommodityName(id);
-                    commodityText.put(id, name + "  供应+" + s + "  消耗-" + d);
+                    String cName = getCommodityName(id);
+                    String cSprite = getCommoditySprite(id);
+                    int sup = pm.getSupply(id);
+                    if (sup > 0) {
+                        int intra = 0, inter = 0;
+                        for (TradePair tp : pm.getSupplyTrade()) {
+                            if (!tp.getItemId().equals(id)) continue;
+                            if (tp.isIntraSystem()) intra += tp.getItemNum();
+                            else inter += tp.getItemNum();
+                        }
+                        int excess = sup - intra - inter;
+                        String markerType = "LOCAL";
+                        String markerSprite = getSettingsSprite("commodity_markers", "production");
+                        if (markerSprite.isEmpty()) {
+                            String crest = market.getFaction() != null ? market.getFaction().getCrest() : null;
+                            markerSprite = crest != null ? crest : "";
+                        }
+                        int rawProd = pm.getRawProduction(id);
+                        int rawCons = pm.getRawConsumption(id);
+                        rows.add("supply|" + id + "|" + cName + "|" + cSprite + "|" + sup
+                                + "|" + intra + "|" + inter + "|" + excess + "|" + markerType + "|" + markerSprite
+                                + "|" + rawProd + "|" + rawCons);
+                    }
+                    int dem = pm.getDemand(id);
+                    if (dem > 0) {
+                        int intra = 0, inter = 0;
+                        for (TradePair tp : pm.getDemandTrade()) {
+                            if (!tp.getItemId().equals(id)) continue;
+                            if (tp.isIntraSystem()) intra += tp.getItemNum();
+                            else inter += tp.getItemNum();
+                        }
+                        int deficit = dem - intra - inter;
+                        String demandSource = getDemandSource(pm, id);
+                        String markerSprite;
+                        if ("IN_FACTION".equals(demandSource)) {
+                            String crest = market.getFaction() != null ? market.getFaction().getCrest() : null;
+                            markerSprite = crest != null ? crest : "";
+                        } else if ("GLOBAL".equals(demandSource)) {
+                            markerSprite = getSettingsSprite("commodity_markers", "imports");
+                            if (markerSprite.isEmpty()) {
+                                String crest = market.getFaction() != null ? market.getFaction().getCrest() : null;
+                                markerSprite = crest != null ? crest : "";
+                            }
+                        } else {
+                            markerSprite = getSettingsSprite("icon", "in_faction_and_global");
+                            if (markerSprite.isEmpty()) {
+                                markerSprite = getSettingsSprite("commodity_markers", "imports");
+                                if (markerSprite.isEmpty()) {
+                                    String crest = market.getFaction() != null ? market.getFaction().getCrest() : null;
+                                    markerSprite = crest != null ? crest : "";
+                                }
+                            }
+                        }
+                        int rawProd = pm.getRawProduction(id);
+                        int rawCons = pm.getRawConsumption(id);
+                        rows.add("demand|" + id + "|" + cName + "|" + cSprite + "|" + dem
+                                + "|" + intra + "|" + inter + "|" + deficit + "|" + demandSource + "|" + markerSprite
+                                + "|" + rawProd + "|" + rawCons);
+                    }
                 }
-                market.getMemoryWithoutUpdate().set(MEM_KEY + "_display", commodityText);
+                market.getMemoryWithoutUpdate().set(MEM_KEY + "_rows", rows);
             }
         }
+    }
+
+    public static void forceCalculate() {
+        List<MarketAPI> allMarkets = Global.getSector().getEconomy().getMarketsCopy();
+        planetMarkets = getMarkets(allMarkets);
+        getSystemMarkets();
+        for (Map.Entry<StarSystemAPI, SystemMarket> systemMarketPair : systemMarkets.entrySet()) {
+            matchSystemTrade(systemMarketPair.getValue());
+        }
+        matchInterSystemTrade();
+        persistTradeData();
+        EconomyDataIntel.ensureIntelsForAllSystems();
+    }
+
+    private static String getDemandSource(PlanetMarket pm, String commodityId) {
+        boolean hasSame = false, hasDiff = false;
+        FactionAPI own = pm.getFaction();
+        for (TradePair tp : pm.getDemandTrade()) {
+            if (!tp.getItemId().equals(commodityId)) continue;
+            if (tp.getFromFaction() != null && tp.getFromFaction().equals(own)) hasSame = true;
+            else hasDiff = true;
+        }
+        if (hasSame && hasDiff) return "IN_FACTION_AND_GLOBAL";
+        if (hasSame) return "IN_FACTION";
+        if (hasDiff) return "GLOBAL";
+        return "GLOBAL";
+    }
+
+    private static String getSettingsSprite(String category, String key) {
+        try {
+            for (java.lang.reflect.Method m : com.fs.starfarer.settings.StarfarerSettings.class.getDeclaredMethods()) {
+                if (m.getParameterCount() == 2
+                        && m.getParameterTypes()[0] == String.class
+                        && m.getParameterTypes()[1] == String.class
+                        && m.getReturnType() == String.class) {
+                    m.setAccessible(true);
+                    String result = (String) m.invoke(null, category, key);
+                    if (result != null && !result.isEmpty()) return result;
+                    break;
+                }
+            }
+        } catch (Exception ignored) {}
+        return "";
+    }
+
+    private static String getCommoditySprite(String commodityId) {
+        try {
+            String iconName = Global.getSettings().getCommoditySpec(commodityId).getIconName();
+            if (iconName != null && !iconName.isEmpty()) {
+                if (!iconName.contains("/")) {
+                    if (!iconName.endsWith(".png")) iconName += ".png";
+                    return "graphics/icons/commodities/" + iconName;
+                }
+                return iconName;
+            }
+        } catch (Exception ignored) {}
+        return "graphics/icons/commodities/" + commodityId.toLowerCase() + ".png";
     }
 
     private static final String MEM_KEY = "$corecracking_econ_data";

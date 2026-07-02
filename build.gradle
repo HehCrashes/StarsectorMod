@@ -64,7 +64,6 @@ jar {
         exclude 'data/**'
         exclude 'graphics/**'
         exclude 'sounds/**'
-        exclude '*.mixin.json'
     }
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE

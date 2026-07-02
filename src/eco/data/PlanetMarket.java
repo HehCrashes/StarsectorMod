@@ -17,6 +17,9 @@ public class PlanetMarket{
     // 产能/消耗 总和
     private Map<String, Integer> supply = new HashMap<>();
     private Map<String, Integer> demand = new HashMap<>();
+    // 原始总产量/总消耗(未互相抵消)
+    private Map<String, Integer> rawProduction = new HashMap<>();
+    private Map<String, Integer> rawConsumption = new HashMap<>();
     // 生产/进口 订单
     private List<TradePair> supplyTrade = new ArrayList<>();
     private List<TradePair> demandTrade = new ArrayList<>();
@@ -43,6 +46,8 @@ public class PlanetMarket{
     public void updateSupplyAndDemand() {
         supply.clear();
         demand.clear();
+        rawProduction.clear();
+        rawConsumption.clear();
         for (CommodityOnMarketAPI item : market.getAllCommodities()) {
             if (item.isNonEcon() || item.getCommodity().isMeta()) continue;
 
@@ -58,6 +63,9 @@ public class PlanetMarket{
             totalSupply = (int)(totalSupply * getPeopleScale(market.getSize()));
             totalDemand  = (int)(totalDemand * getPeopleScale(market.getSize()));
 
+            rawProduction.put(item.getId(), totalSupply);
+            rawConsumption.put(item.getId(), totalDemand);
+
             int sd = totalSupply - totalDemand;
             if (sd > 0) supply.put(item.getId(), sd);
             if (sd < 0) demand.put(item.getId(), -sd);
@@ -66,6 +74,8 @@ public class PlanetMarket{
 
     public int getSupply(String commodityId)    { return supply.getOrDefault(commodityId, 0); }
     public int getDemand(String commodityId)    { return demand.getOrDefault(commodityId, 0); }
+    public int getRawProduction(String commodityId) { return rawProduction.getOrDefault(commodityId, 0); }
+    public int getRawConsumption(String commodityId) { return rawConsumption.getOrDefault(commodityId, 0); }
     public MarketAPI getMarket() {
         return market;
     }
